@@ -4,10 +4,10 @@ mod join;
 mod leave;
 mod play;
 
-use join::*;
-use leave::*;
-use play::*;
+use self::join::*;
+use self::leave::*;
+use self::play::*;
 
 #[group]
 #[commands(join, leave, play)]
-struct Music;
+struct Audio;

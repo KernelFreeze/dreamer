@@ -8,6 +8,7 @@ use crate::errors::check_msg;
 #[command]
 #[only_in(guilds)]
 #[bucket = "basic"]
+#[description = "Leave a voice channel."]
 async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.unwrap();
     let guild_id = guild.id;

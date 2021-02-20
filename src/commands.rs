@@ -1,3 +1,7 @@
-mod music;
+mod general;
+mod audio;
 
-pub use music::*;
+pub mod help;
+
+pub use self::general::*;
+pub use self::audio::*;

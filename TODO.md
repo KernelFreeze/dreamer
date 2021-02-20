@@ -1,0 +1,5 @@
+- Autojoin on play music
+- Configurable play permissions (only when connected to channel?)
+- Music queue
+- Help command
+- Translation settings

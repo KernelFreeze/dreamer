@@ -8,6 +8,7 @@ use crate::errors::check_msg;
 #[command]
 #[only_in(guilds)]
 #[bucket = "basic"]
+#[description = "Join a voice channel, to be able to play sounds and videos."]
 async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.unwrap();
     let guild_id = guild.id;

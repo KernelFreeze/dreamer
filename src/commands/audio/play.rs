@@ -6,8 +6,11 @@ use serenity::model::channel::Message;
 use crate::errors::check_msg;
 
 #[command]
+#[aliases("p")]
 #[only_in(guilds)]
 #[bucket = "basic"]
+#[description = "Play a sound with the provided URL or YouTube query. Supported websites are: YouTube, \
+                 Spotify, Soundcloud. Also playlists are supported."]
 async fn play(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let url = if let Ok(url) = args.single::<String>() {
         url

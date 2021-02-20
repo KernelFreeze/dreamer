@@ -3,57 +3,80 @@
 #![deny(clippy::unwrap_in_result)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::pedantic)]
+#![deny(unused_must_use)]
 
+use std::collections::HashSet;
 use std::env;
 use std::error::Error;
 use std::fs::File;
+use std::sync::Arc;
 
 use dotenv::dotenv;
-use log::{error, warn};
-use serde_json::json;
+use log::warn;
+use serenity::client::bridge::gateway::ShardManager;
 use serenity::client::Client;
-use serenity::framework::standard::macros::hook;
-use serenity::framework::standard::CommandError;
 use serenity::framework::StandardFramework;
-use serenity::model::prelude::*;
+use serenity::http::Http;
 use serenity::prelude::*;
 use simplelog::*;
 use songbird::SerenityInit;
-
-use crate::errors::check_msg;
 
 mod commands;
 mod database;
 mod errors;
 mod events;
+mod hooks;
 mod lang;
 
-#[hook]
-async fn after_hook(ctx: &Context, msg: &Message, cmd_name: &str, error: Result<(), CommandError>) {
-    if let Err(why) = error {
-        error!("Error in command '{}': {:?}", cmd_name, why);
+// A container type is created for inserting into the Client's `data`, which
+// allows for data to be accessible across all events and framework commands, or
+// anywhere else that has a copy of the `data` Arc.
+pub struct ShardManagerContainer;
 
-        let lang = database::get_language(msg.author.id, msg.guild_id).await;
-        let text = lang
-            .translate("key", json!({ "error": why.to_string() }))
-            .unwrap_or("Command failed".into());
+impl TypeMapKey for ShardManagerContainer {
+    type Value = Arc<Mutex<ShardManager>>;
+}
 
-        check_msg(msg.reply(ctx, text).await);
-    }
+async fn init_data_manager(client: &Client) {
+    let mut data = client.data.write().await;
+    data.insert::<ShardManagerContainer>(Arc::clone(&client.shard_manager));
 }
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
     CombinedLogger::init(vec![
         TermLogger::new(LevelFilter::Warn, Config::default(), TerminalMode::Mixed),
-        WriteLogger::new(LevelFilter::Info, Config::default(), File::create("bot.log")?),
+        WriteLogger::new(LevelFilter::Warn, Config::default(), File::create("bot.log")?),
     ])?;
 
+    // Fetch environment variables from .env file
     if let Err(err) = dotenv() {
         warn!("Failed to parse environment variables file: {:?}", err);
     }
 
+    // Fetch discord token
+    let token = env::var("DISCORD_TOKEN")?;
+
+    // Connect to database
     database::connect(&env::var("DATABASE_URI")?).await?;
+
+    // Fetch bot owners from Discord application
+    let http = Http::new_with_token(&token);
+    let (owners, _) = match http.get_current_application_info().await {
+        Ok(info) => {
+            let mut owners = HashSet::new();
+            if let Some(team) = info.team {
+                owners.insert(team.owner_user_id);
+            } else {
+                owners.insert(info.owner.id);
+            }
+            match http.get_current_user().await {
+                Ok(bot_id) => (owners, bot_id.id),
+                Err(why) => panic!("Could not access the bot id: {:?}", why),
+            }
+        },
+        Err(why) => panic!("Could not access application info: {:?}", why),
+    };
 
     let framework = StandardFramework::new()
         .configure(|c| {
@@ -61,18 +84,27 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 .no_dm_prefix(true)
                 .case_insensitivity(true)
                 .allow_dm(true)
+                .owners(owners)
         })
-        .bucket("basic", |b| b.delay(2).time_span(10).limit(3))
-        .await
-        .after(after_hook)
-        .group(&commands::MUSIC_GROUP);
+        .after(hooks::after_hook)
+        .help(&commands::help::HELP)
+        .group(&commands::AUDIO_GROUP)
+        .group(&commands::GENERAL_GROUP)
+        .bucket("basic", |b| {
+            b.delay(2)
+                .time_span(10)
+                .limit(3)
+                .delay_action(hooks::delay_action)
+        })
+        .await;
 
-    let mut client = Client::builder(&env::var("DISCORD_TOKEN")?)
+    let mut client = Client::builder(&token)
         .event_handler(events::Handler)
         .framework(framework)
         .register_songbird()
         .await?;
+    init_data_manager(&client).await;
 
-    client.start_autosharded().await?;
+    client.start().await?;
     Ok(())
 }
