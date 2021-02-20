@@ -1,0 +1,3 @@
+{
+    "command.error.internal": "I'm sorry, I had an internal error processing this command. Error: `{error}`"
+}
