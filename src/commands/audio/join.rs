@@ -3,8 +3,6 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::CommandResult;
 use serenity::model::channel::Message;
 
-use crate::errors::check_msg;
-
 #[command]
 #[only_in(guilds)]
 #[bucket = "basic"]
@@ -21,7 +19,7 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     let connect_to = if let Some(channel) = channel_id {
         channel
     } else {
-        check_msg(msg.reply(ctx, "Not in a voice channel").await);
+        msg.reply(ctx, "Not in a voice channel").await?;
         return Ok(());
     };
 

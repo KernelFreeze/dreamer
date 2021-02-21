@@ -3,8 +3,6 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::CommandResult;
 use serenity::model::channel::Message;
 
-use crate::errors::check_msg;
-
 #[command]
 #[only_in(guilds)]
 #[bucket = "basic"]
@@ -21,12 +19,12 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
 
     if has_handler {
         if let Err(e) = manager.remove(guild_id).await {
-            check_msg(msg.reply(ctx, format!("Failed: {:?}", e)).await);
+            msg.reply(ctx, format!("Failed: {:?}", e)).await?;
         }
 
-        check_msg(msg.reply(ctx, "Left voice channel").await);
+        msg.reply(ctx, "Left voice channel").await?;
     } else {
-        check_msg(msg.reply(ctx, "Not in a voice channel").await);
+        msg.reply(ctx, "Not in a voice channel").await?;
     }
 
     Ok(())

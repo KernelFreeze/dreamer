@@ -9,6 +9,7 @@ use crate::ShardManagerContainer;
 #[command]
 #[aliases("lag")]
 #[bucket = "basic"]
+#[description = "Check bot shard latency with the Discord Gateway."]
 async fn latency(ctx: &Context, msg: &Message) -> CommandResult {
     // The shard manager is an interface for mutating, stopping, restarting, and
     // retrieving information about shards.

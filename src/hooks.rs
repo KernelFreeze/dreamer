@@ -6,7 +6,6 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 
 use crate::database::get_language;
-use crate::errors::check_msg;
 
 #[hook]
 pub async fn after_hook(ctx: &Context, msg: &Message, cmd_name: &str, error: Result<(), CommandError>) {
@@ -18,7 +17,9 @@ pub async fn after_hook(ctx: &Context, msg: &Message, cmd_name: &str, error: Res
             .translate("command.error.internal", json!({ "error": why.to_string() }))
             .unwrap_or("Command failed".into());
 
-        check_msg(msg.reply(ctx, text).await);
+        if let Err(why) = msg.reply(ctx, text).await {
+            error!("Error sending a message: {:?}", why);
+        }
     }
 }
 

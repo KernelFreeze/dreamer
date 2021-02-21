@@ -21,9 +21,9 @@ use serenity::prelude::*;
 use simplelog::*;
 use songbird::SerenityInit;
 
+mod audio;
 mod commands;
 mod database;
-mod errors;
 mod events;
 mod hooks;
 mod lang;

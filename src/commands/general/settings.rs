@@ -5,6 +5,7 @@ use serenity::model::channel::Message;
 
 #[command]
 #[bucket = "basic"]
+#[description = "Configure Personal User Settings"]
 async fn settings(_ctx: &Context, _msg: &Message) -> CommandResult {
     Ok(())
 }

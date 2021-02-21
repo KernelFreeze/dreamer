@@ -7,6 +7,7 @@ use serenity::model::channel::Message;
 #[only_in(guilds)]
 #[bucket = "basic"]
 #[required_permissions("ADMINISTRATOR")]
+#[description = "Configure Guild Settings"]
 async fn guild_settings(_ctx: &Context, _msg: &Message) -> CommandResult {
     Ok(())
 }

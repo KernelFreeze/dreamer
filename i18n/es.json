@@ -1,3 +1,3 @@
 {
-    "command.error.internal": "Error interno al intentar procesar este comando. {error}"
+    "command.error.internal": "No se pudo procesar este comando. {error}"
 }
