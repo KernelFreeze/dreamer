@@ -1,0 +1,15 @@
+[package]
+name = "youtube-music"
+version = "0.1.0"
+authors = ["KernelFreeze <kernelfreeze@outlook.com>"]
+edition = "2018"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+serde_json = "1.0.62"
+serde = { version = "1.0", features = ["derive"] }
+async-process = "1.0.2"
+
+[dev-dependencies]
+tokio = { version = "1.2.0", features = ["macros", "rt-multi-thread"] }
