@@ -1,12 +1,12 @@
 use serenity::framework::standard::macros::group;
 
-mod settings;
 mod guild_settings;
 mod latency;
+mod settings;
 
-use self::settings::*;
 use self::guild_settings::*;
 use self::latency::*;
+use self::settings::*;
 
 #[group]
 #[commands(settings, guild_settings, latency)]

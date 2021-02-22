@@ -5,7 +5,6 @@
 pub use async_trait::async_trait;
 pub use mongodb;
 pub use mongodb::bson;
-
 pub use wither_derive::Model;
 #[cfg(any(feature = "sync"))]
 pub use wither_derive::ModelSync;
@@ -27,7 +26,8 @@ pub use model::Model;
 
 /// All traits needed for basic usage of the wither system.
 pub mod prelude {
+    pub use wither_derive::Model;
+
     pub use crate::migration::{Migrating, Migration};
     pub use crate::model::Model;
-    pub use wither_derive::Model;
 }

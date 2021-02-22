@@ -12,6 +12,6 @@ if len(arguments) == 0:
     exit()
 
 ytmusic = YTMusic()
-search_results = ytmusic.search(query=arguments, filter="songs")
+search_results = ytmusic.search(query=arguments, filter="songs", limit=1)
 
 print(json.dumps(search_results))

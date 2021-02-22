@@ -38,7 +38,10 @@ pub struct IndexTestV3 {
 /// Index V4 has a different option
 #[derive(Model, Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[model(collection_name = "indexTest")]
-#[model(index(keys = r#"doc!{"i": -1}"#, options = r#"doc!{"unique": true, "background": true}"#))]
+#[model(index(
+    keys = r#"doc!{"i": -1}"#,
+    options = r#"doc!{"unique": true, "background": true}"#
+))]
 pub struct IndexTestV4 {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,
@@ -49,7 +52,10 @@ pub struct IndexTestV4 {
 /// Index V5 is the same as Index V4
 #[derive(Model, Serialize, Deserialize, Debug, Clone, Eq, PartialEq)]
 #[model(collection_name = "indexTest")]
-#[model(index(keys = r#"doc!{"i": -1}"#, options = r#"doc!{"unique": true, "background": true}"#))]
+#[model(index(
+    keys = r#"doc!{"i": -1}"#,
+    options = r#"doc!{"unique": true, "background": true}"#
+))]
 pub struct IndexTestV5 {
     #[serde(rename = "_id", skip_serializing_if = "Option::is_none")]
     pub id: Option<ObjectId>,

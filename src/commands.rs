@@ -1,7 +1,7 @@
-mod general;
 mod audio;
+mod general;
 
 pub mod help;
 
-pub use self::general::*;
 pub use self::audio::*;
+pub use self::general::*;

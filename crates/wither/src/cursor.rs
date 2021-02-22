@@ -22,8 +22,9 @@ impl<T: Model> ModelCursor<T> {
     }
 }
 
-// Impl Unpin on this container as we do not care about this container staying pinned,
-// only the underlying `Cursor` needs to remain pinned while we poll from this vantage point.
+// Impl Unpin on this container as we do not care about this container staying
+// pinned, only the underlying `Cursor` needs to remain pinned while we poll
+// from this vantage point.
 impl<T> Unpin for ModelCursor<T> {}
 
 impl<T: Model> Stream for ModelCursor<T> {

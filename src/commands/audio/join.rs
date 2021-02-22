@@ -4,6 +4,7 @@ use serenity::framework::standard::CommandResult;
 use serenity::model::channel::Message;
 
 #[command]
+#[aliases("j")]
 #[only_in(guilds)]
 #[bucket = "basic"]
 #[description = "Join a voice channel, to be able to play sounds and videos."]

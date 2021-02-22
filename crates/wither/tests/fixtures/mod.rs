@@ -15,7 +15,8 @@ use wither::prelude::*;
 lazy_static! {
     static ref HOST: String = env::var("HOST").expect("environment variable HOST must be defined");
     static ref PORT: String = env::var("PORT").expect("environment variable PORT must be defined");
-    static ref CONNECTION_STRING: String = format!("mongodb://{}:{}/", HOST.as_str(), PORT.as_str());
+    static ref CONNECTION_STRING: String =
+        format!("mongodb://{}:{}/", HOST.as_str(), PORT.as_str());
 }
 
 //////////////////////////////////////////////////////////////////////////////
@@ -86,9 +87,10 @@ impl Migrating for UserModelBadMigrations {
 
 /// A singular type representing the various fixtures available in this harness.
 ///
-/// This type represents some combination of desired states which this system's dependencies must
-/// be in. Generally speaking, this represents the backend database; however it is not necessarily
-/// limited to only the backend database.
+/// This type represents some combination of desired states which this system's
+/// dependencies must be in. Generally speaking, this represents the backend
+/// database; however it is not necessarily limited to only the backend
+/// database.
 pub struct Fixture {
     client: Client,
 }
@@ -99,26 +101,33 @@ pub struct Fixture {
 impl Fixture {
     /// Create a new fixture.
     pub async fn new() -> Self {
-        let client = Client::with_uri_str(&CONNECTION_STRING).await.expect("failed to connect to database");
+        let client = Client::with_uri_str(&CONNECTION_STRING)
+            .await
+            .expect("failed to connect to database");
         Fixture { client }
     }
 
-    // /// Remove all documents & indexes from the collections of the data models used by this harness.
-    // pub fn with_empty_collections(self) -> Self {
-    //     DB.clone().collection(User::COLLECTION_NAME).drop(None).expect("failed to drop collection");
-    //     DB.clone().collection(UserModelBadMigrations::COLLECTION_NAME).drop(None).expect("failed to
-    // drop collection");     self
+    // /// Remove all documents & indexes from the collections of the data models
+    // used by this harness. pub fn with_empty_collections(self) -> Self {
+    //     DB.clone().collection(User::COLLECTION_NAME).drop(None).expect("failed to
+    // drop collection");     DB.clone().collection(UserModelBadMigrations::
+    // COLLECTION_NAME).drop(None).expect("failed to drop collection");     self
     // }
 
     /// Drop the database which is used by this harness.
     pub async fn with_dropped_database(self) -> Self {
-        self.get_db().drop(None).await.expect("failed to drop database");
+        self.get_db()
+            .drop(None)
+            .await
+            .expect("failed to drop database");
         self
     }
 
     /// Sync all of the data models used by this harness.
     pub async fn with_synced_models(self) -> Self {
-        User::sync(&self.get_db()).await.expect("failed to sync `User` model");
+        User::sync(&self.get_db())
+            .await
+            .expect("failed to sync `User` model");
         self
     }
 }

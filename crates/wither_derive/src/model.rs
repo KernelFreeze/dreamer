@@ -16,8 +16,8 @@ pub(crate) struct MetaModel<'a> {
     ident: &'a syn::Ident,
     attrs: &'a [syn::Attribute],
     fields: Vec<FieldWithFilteredAttrs<'a>>,
-    /// The model's collection name; will default to a formatted and pluralized form of the struct's
-    /// name.
+    /// The model's collection name; will default to a formatted and pluralized
+    /// form of the struct's name.
     collection_name: Option<String>,
     /// A flag to configure if serde checks should be skipped.
     skip_serde_checks: Option<()>,
@@ -25,14 +25,14 @@ pub(crate) struct MetaModel<'a> {
     indexes: Vec<IndexModelTokens>,
     /// The model's read concern; will default to None if not specified.
     ///
-    /// NOTE WELL: there is currently an issue with darling's parsing of enums where if the value
-    /// is not specified in one of the ways which darling expects, it will behave unexpectedly. See
-    /// https://github.com/TedDriggs/darling/issues/74#issuecomment-635761725
+    /// NOTE WELL: there is currently an issue with darling's parsing of enums
+    /// where if the value is not specified in one of the ways which darling
+    /// expects, it will behave unexpectedly. See https://github.com/TedDriggs/darling/issues/74#issuecomment-635761725
     pub read_concern: Option<ReadConcern>,
     /// The model's write concern; will default to None if not specified.
     pub write_concern: Option<WriteConcern>,
-    /// The function which should be called to get the model's selection criteria; will default to
-    /// None if not specified.
+    /// The function which should be called to get the model's selection
+    /// criteria; will default to None if not specified.
     pub selection_criteria: Option<syn::Path>,
 }
 
@@ -126,16 +126,16 @@ impl<'a> MetaModel<'a> {
     //     let collection_name = self.get_collection_name();
     //     let read_concern = OptionReadConcern(&self.read_concern);
     //     let write_concern = OptionWriteConcern(&self.write_concern);
-    //     let selection_criteria = OptionSelectionCriteria(&self.selection_criteria);
-    //     let indexes = &self.indexes;
-    //     quote! {
+    //     let selection_criteria =
+    // OptionSelectionCriteria(&self.selection_criteria);     let indexes =
+    // &self.indexes;     quote! {
     //         impl wither::ModelSync for #name {
     //             const COLLECTION_NAME: &'static str = #collection_name;
 
     //             /// Get a cloned copy of this instance's ID.
-    //             fn id(&self) -> ::std::option::Option<wither::bson::oid::ObjectId> {
-    //                 self.id.clone()
-    //             }
+    //             fn id(&self) ->
+    // ::std::option::Option<wither::bson::oid::ObjectId> {                 
+    // self.id.clone()             }
 
     //             /// Set this instance's ID.
     //             fn set_id(&mut self, oid: wither::bson::oid::ObjectId) {
@@ -143,22 +143,22 @@ impl<'a> MetaModel<'a> {
     //             }
 
     //             /// The model's read concern.
-    //             fn read_concern() -> Option<wither::mongodb::options::ReadConcern> {
-    //                 #read_concern
-    //             }
+    //             fn read_concern() ->
+    // Option<wither::mongodb::options::ReadConcern> {                 
+    // #read_concern             }
 
     //             /// The model's write concern.
-    //             fn write_concern() -> Option<wither::mongodb::options::WriteConcern> {
-    //                 #write_concern
-    //             }
+    //             fn write_concern() ->
+    // Option<wither::mongodb::options::WriteConcern> {                 
+    // #write_concern             }
 
     //             /// The model's selection criteria.
     //             ///
-    //             /// When deriving a model, a function or an associated function should be specified
-    // which             /// should be used to produce the desired value.
-    //             fn selection_criteria() -> Option<wither::mongodb::options::SelectionCriteria> {
-    //                 #selection_criteria
-    //             }
+    //             /// When deriving a model, a function or an associated function
+    // should be specified which             /// should be used to produce the
+    // desired value.             fn selection_criteria() ->
+    // Option<wither::mongodb::options::SelectionCriteria> {                 
+    // #selection_criteria             }
 
     //             /// All indexes currently on this model.
     //             fn indexes() -> Vec<wither::IndexModel> {
@@ -171,13 +171,15 @@ impl<'a> MetaModel<'a> {
     /// Extract any model attrs and bind them to their optional slots.
     fn extract_model_attrs(&mut self) {
         let attrs = Self::parse_attrs(&self.attrs, MODEL_HELPER_ATTR);
-        // Parse over the internals of our `model` attrs. At this point, we are dealing with
-        // individual elements inside of the various `model(...)` attrs.
+        // Parse over the internals of our `model` attrs. At this point, we are dealing
+        // with individual elements inside of the various `model(...)` attrs.
         for attr_meta in attrs {
-            let ident = attr_meta
-                .path()
-                .get_ident()
-                .unwrap_or_else(|| abort!(attr_meta, "malformed wither model attribute, please review the wither docs"));
+            let ident = attr_meta.path().get_ident().unwrap_or_else(|| {
+                abort!(
+                    attr_meta,
+                    "malformed wither model attribute, please review the wither docs"
+                )
+            });
             let ident_str = ident.to_string();
             match ident_str.as_str() {
                 "collection_name" => self.extract_collection_name(&attr_meta),
@@ -201,7 +203,10 @@ impl<'a> MetaModel<'a> {
             _ => abort!(meta, META_MUST_BE_KV_PAIR),
         };
         if name.is_empty() {
-            abort!(meta, "wither model collection names must be at least one character in length");
+            abort!(
+                meta,
+                "wither model collection names must be at least one character in length"
+            );
         }
         if self.collection_name.is_some() {
             abort!(meta, DUPLICATE_ATTR_SPEC);
@@ -249,7 +254,10 @@ impl<'a> MetaModel<'a> {
     fn extract_skip_serde_checks(&mut self, meta: &syn::Meta) {
         match meta {
             syn::Meta::Path(path) if path.is_ident("skip_serde_checks") => (),
-            _ => abort!(meta, "this attribute must be specified simply as `#[model(skip_serde_checks)]`"),
+            _ => abort!(
+                meta,
+                "this attribute must be specified simply as `#[model(skip_serde_checks)]`"
+            ),
         }
         if self.skip_serde_checks.is_some() {
             abort!(meta, DUPLICATE_ATTR_SPEC);
@@ -288,8 +296,8 @@ impl<'a> MetaModel<'a> {
             .unwrap_or_else(|| self.ident.to_string().to_table_case().to_plural())
     }
 
-    /// Parse the given slice of attrs and return an accumulation of each individual attr within the
-    /// parent `#[model(...)]` list.
+    /// Parse the given slice of attrs and return an accumulation of each
+    /// individual attr within the parent `#[model(...)]` list.
     fn parse_attrs(attrs: &[syn::Attribute], container_name: &str) -> Vec<syn::Meta> {
         attrs.iter()
             // Only process attrs matching the given container name.
@@ -318,8 +326,9 @@ impl<'a> MetaModel<'a> {
 
     /// Ensure the model has an ID field which is structured as needed.
     ///
-    /// NB: the type of the ID field is not checked here. The compiler still checks that the type
-    /// matches as needed when the AST is written back out to the compiler.
+    /// NB: the type of the ID field is not checked here. The compiler still
+    /// checks that the type matches as needed when the AST is written back
+    /// out to the compiler.
     fn check_id_field(&self) {
         // Unpack the struct fields.
         // Look for the model's ID field.
@@ -330,8 +339,14 @@ impl<'a> MetaModel<'a> {
                 Some(ident) => ident == "id",
                 None => false,
             })
-            .unwrap_or_else(|| abort!(self.ident, "wither models must have a field `id` of type `Option<bson::oid::ObjectId>`"));
-        // Ensure the ID field has needed serde attributes, unless this check is disabled.
+            .unwrap_or_else(|| {
+                abort!(
+                    self.ident,
+                    "wither models must have a field `id` of type `Option<bson::oid::ObjectId>`"
+                )
+            });
+        // Ensure the ID field has needed serde attributes, unless this check is
+        // disabled.
         if self.skip_serde_checks.is_none() {
             self.check_id_serde_attrs(id_field);
         }
@@ -343,15 +358,21 @@ impl<'a> MetaModel<'a> {
         let mut found_skip = false;
         for attr in &id_field.serde_attrs {
             if attr.path().is_ident("rename") {
-                let model = SerdeIdRename::from_meta(attr).unwrap_or_else(|err| abort!(attr, "failed to parse serde rename attr"; hint=err));
+                let model = SerdeIdRename::from_meta(attr).unwrap_or_else(
+                    |err| abort!(attr, "failed to parse serde rename attr"; hint=err),
+                );
                 if model.0 != "_id" {
-                    abort!(attr, r#"the serde `rename` attr for wither::Model ID fields should be `rename="_id"`"#);
+                    abort!(
+                        attr,
+                        r#"the serde `rename` attr for wither::Model ID fields should be `rename="_id"`"#
+                    );
                 }
                 found_rename = true;
             }
             if attr.path().is_ident("skip_serializing_if") {
-                let model =
-                    SerdeIdSkip::from_meta(attr).unwrap_or_else(|err| abort!(attr, "failed to parse serde skip_serializing_if attr"; hint=err));
+                let model = SerdeIdSkip::from_meta(attr).unwrap_or_else(
+                    |err| abort!(attr, "failed to parse serde skip_serializing_if attr"; hint=err),
+                );
                 if model.0 != "Option::is_none" {
                     abort!(
                         attr,
@@ -382,7 +403,8 @@ pub struct FieldWithFilteredAttrs<'a> {
     field: &'a syn::Field,
 }
 
-/// A required serde attr for renaming the ID field during serialization & deserialization.
+/// A required serde attr for renaming the ID field during serialization &
+/// deserialization.
 #[derive(FromMeta)]
 pub struct SerdeIdRename(pub String);
 
@@ -410,11 +432,21 @@ impl quote::ToTokens for OptionReadConcern<'_> {
     fn to_tokens(&self, tokens: &mut proc_macro2::TokenStream) {
         match self.0 {
             None => tokens.extend(quote!(None)),
-            Some(ReadConcern::Local) => tokens.extend(quote!(Some(wither::mongodb::options::ReadConcern::local()))),
-            Some(ReadConcern::Majority) => tokens.extend(quote!(Some(wither::mongodb::options::ReadConcern::majority()))),
-            Some(ReadConcern::Linearizable) => tokens.extend(quote!(Some(wither::mongodb::options::ReadConcern::linearizable()))),
-            Some(ReadConcern::Available) => tokens.extend(quote!(Some(wither::mongodb::options::ReadConcern::available()))),
-            Some(ReadConcern::Custom(val)) => tokens.extend(quote!(Some(wither::mongodb::options::ReadConcern::custom(String::from(#val))))),
+            Some(ReadConcern::Local) => {
+                tokens.extend(quote!(Some(wither::mongodb::options::ReadConcern::local())))
+            },
+            Some(ReadConcern::Majority) => tokens.extend(quote!(Some(
+                wither::mongodb::options::ReadConcern::majority()
+            ))),
+            Some(ReadConcern::Linearizable) => tokens.extend(quote!(Some(
+                wither::mongodb::options::ReadConcern::linearizable()
+            ))),
+            Some(ReadConcern::Available) => tokens.extend(quote!(Some(
+                wither::mongodb::options::ReadConcern::available()
+            ))),
+            Some(ReadConcern::Custom(val)) => tokens.extend(
+                quote!(Some(wither::mongodb::options::ReadConcern::custom(String::from(#val)))),
+            ),
         }
     }
 }
@@ -450,9 +482,15 @@ impl quote::ToTokens for OptionWriteConcern<'_> {
             Some(wc) => {
                 let w = match &wc.w {
                     Some(ack) => match ack {
-                        Acknowledgment::Nodes(val) => quote!(Some(wither::mongodb::options::Acknowledgment::Nodes(#val))),
-                        Acknowledgment::Majority => quote!(Some(wither::mongodb::options::Acknowledgment::Majority)),
-                        Acknowledgment::Custom(val) => quote!(Some(wither::mongodb::options::Acknowledgment::Custom(String::from(#val)))),
+                        Acknowledgment::Nodes(val) => {
+                            quote!(Some(wither::mongodb::options::Acknowledgment::Nodes(#val)))
+                        },
+                        Acknowledgment::Majority => {
+                            quote!(Some(wither::mongodb::options::Acknowledgment::Majority))
+                        },
+                        Acknowledgment::Custom(val) => {
+                            quote!(Some(wither::mongodb::options::Acknowledgment::Custom(String::from(#val))))
+                        },
                     },
                     None => quote!(None),
                 };
@@ -465,7 +503,7 @@ impl quote::ToTokens for OptionWriteConcern<'_> {
                     None => quote!(None),
                 };
                 tokens.extend(quote!(Some(wither::mongodb::options::WriteConcern::builder().w(#w).w_timeout(#w_timeout).journal(#journal).build())));
-            }
+            },
         }
     }
 }
@@ -499,7 +537,9 @@ pub struct RawIndexModel {
 
 impl From<RawIndexModel> for IndexModelTokens {
     fn from(src: RawIndexModel) -> Self {
-        let keys = syn::parse_str(&src.keys).unwrap_or_else(|err| abort!(src.keys.span(), "error parsing keys, must be valid Rust code"; hint=err));
+        let keys = syn::parse_str(&src.keys).unwrap_or_else(
+            |err| abort!(src.keys.span(), "error parsing keys, must be valid Rust code"; hint=err),
+        );
         let options = src.options.as_ref().as_ref().map(|opts| {
             syn::parse_str(opts.as_ref()).unwrap_or_else(|err| abort!(src.options.span(), "error parsing options, must be valid Rust code"; hint=err))
         });

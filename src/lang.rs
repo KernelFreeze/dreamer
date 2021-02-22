@@ -59,7 +59,10 @@ impl Language {
         TRANSLATIONS
             .get(self)
             .ok_or(format!("{:?} language was not initialized", self))
-            .map(|v| v.get(key).ok_or(format!("{} was not found in {}", key, self)))
+            .map(|v| {
+                v.get(key)
+                    .ok_or(format!("{} was not found in {}", key, self))
+            })
             .flatten()
     }
 

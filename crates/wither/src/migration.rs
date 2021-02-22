@@ -29,22 +29,27 @@ pub trait Migrating: Model {
 }
 
 /// A trait describing objects which encapsulate a schema migration.
-///
-#[cfg_attr(feature = "docinclude", doc(include = "../docs/migrations-overview.md"))]
+#[cfg_attr(
+    feature = "docinclude",
+    doc(include = "../docs/migrations-overview.md")
+)]
 #[async_trait]
 pub trait Migration: Send + Sync {
     /// The function which is to execute this migration.
     async fn execute<'c>(&self, coll: &'c Collection) -> Result<()>;
 }
 
-/// A migration type which allows execution until the specifed `threshold` date. Then will no-op.
+/// A migration type which allows execution until the specifed `threshold` date.
+/// Then will no-op.
 ///
-/// This migration type works nicely in environments where multiple instances of the system — in
-/// which this migration is defined — are continuously running, even during deployment cycles.
-/// With an `IntervalMigration`, each instance will execute the migration at boottime, until the
-/// `threshold` date is passed. This will compensate for write-heavy workloads, as the final
-/// instance to be updated will ensure schema convergence. As long as you ensure your
-/// migrations are idempotent — **WHICH YOU ALWAYS SHOULD** — this will work quite nicely.
+/// This migration type works nicely in environments where multiple instances of
+/// the system — in which this migration is defined — are continuously running,
+/// even during deployment cycles. With an `IntervalMigration`, each instance
+/// will execute the migration at boottime, until the `threshold` date is
+/// passed. This will compensate for write-heavy workloads, as the final
+/// instance to be updated will ensure schema convergence. As long as you ensure
+/// your migrations are idempotent — **WHICH YOU ALWAYS SHOULD** — this will
+/// work quite nicely.
 pub struct IntervalMigration {
     /// The name for this migration. Must be unique per collection.
     pub name: String,
@@ -68,7 +73,11 @@ impl Migration for IntervalMigration {
 
         // If the migrations threshold has been passed, then no-op.
         if chrono::Utc::now() > self.threshold {
-            log::info!("Successfully executed migration '{}' against '{}'. No-op.", &self.name, ns);
+            log::info!(
+                "Successfully executed migration '{}' against '{}'. No-op.",
+                &self.name,
+                ns
+            );
             return Ok(());
         };
 
@@ -94,7 +103,9 @@ impl Migration for IntervalMigration {
                     .build(),
             ))
             .build();
-        let res = coll.update_many(self.filter.clone(), update, Some(options)).await?;
+        let res = coll
+            .update_many(self.filter.clone(), update, Some(options))
+            .await?;
         log::info!(
             "Successfully executed migration '{}' against '{}'. {} matched. {} modified.",
             &self.name,

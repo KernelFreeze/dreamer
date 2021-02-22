@@ -1,7 +1,7 @@
 use std::error::Error;
 
-use async_process::Command;
 use serde::{Deserialize, Serialize};
+use tokio::process::Command;
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]

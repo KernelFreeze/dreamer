@@ -46,7 +46,11 @@ async fn init_data_manager(client: &Client) {
 async fn main() -> Result<(), Box<dyn Error>> {
     CombinedLogger::init(vec![
         TermLogger::new(LevelFilter::Warn, Config::default(), TerminalMode::Mixed),
-        WriteLogger::new(LevelFilter::Warn, Config::default(), File::create("bot.log")?),
+        WriteLogger::new(
+            LevelFilter::Warn,
+            Config::default(),
+            File::create("bot.log")?,
+        ),
     ])?;
 
     // Fetch environment variables from .env file
@@ -91,10 +95,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .group(&commands::AUDIO_GROUP)
         .group(&commands::GENERAL_GROUP)
         .bucket("basic", |b| {
-            b.delay(2)
-                .time_span(10)
-                .limit(3)
-                .delay_action(hooks::delay_action)
+            b.time_span(10).limit(4).delay_action(hooks::delay_action)
         })
         .await;
 

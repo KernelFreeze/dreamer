@@ -4,13 +4,13 @@
 
 mod model;
 
+use model::MetaModel;
 use proc_macro::TokenStream;
 use proc_macro_error::proc_macro_error;
 use syn::DeriveInput;
 
-use model::MetaModel;
-
-/// Please see the wither crate's documentation for details on the Model derive system.
+/// Please see the wither crate's documentation for details on the Model derive
+/// system.
 #[proc_macro_error]
 #[proc_macro_derive(Model, attributes(model))]
 pub fn proc_macro_derive_model(input: TokenStream) -> TokenStream {
@@ -20,8 +20,8 @@ pub fn proc_macro_derive_model(input: TokenStream) -> TokenStream {
 }
 
 // NOTE WELL: this is pending removed per https://github.com/thedodd/wither/issues/52
-// /// Please see the wither crate's documentation for details on the Model derive system.
-// #[proc_macro_error]
+// /// Please see the wither crate's documentation for details on the Model
+// derive system. #[proc_macro_error]
 // #[proc_macro_derive(ModelSync, attributes(model))]
 // pub fn proc_macro_derive_model_sync(input: TokenStream) -> TokenStream {
 //     let input: DeriveInput = syn::parse_macro_input!(input as DeriveInput);

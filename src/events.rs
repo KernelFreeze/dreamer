@@ -9,11 +9,8 @@ pub struct Handler;
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, ctx: Context, ready: Ready) {
-        ctx.set_presence(
-            Some(Activity::playing(".help")),
-            OnlineStatus::DoNotDisturb,
-        )
-        .await;
+        ctx.set_presence(Some(Activity::playing(".help")), OnlineStatus::DoNotDisturb)
+            .await;
         warn!("{} connected!", ready.user.name);
     }
 }

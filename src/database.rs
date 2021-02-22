@@ -16,13 +16,17 @@ pub mod user;
 static DATABASE: SyncOnceCell<Database> = SyncOnceCell::new();
 
 pub fn database() -> &'static Database {
-    DATABASE.get().expect("Database connection was not initialized")
+    DATABASE
+        .get()
+        .expect("Database connection was not initialized")
 }
 
 pub async fn connect(uri: &str) -> Result<(), Box<dyn Error>> {
     let db = Client::with_uri_str(uri).await?.database("dreamer");
     sync_collections(&db).await?;
-    DATABASE.set(db).map_err(|_| "Database already initialized")?;
+    DATABASE
+        .set(db)
+        .map_err(|_| "Database already initialized")?;
     Ok(())
 }
 
@@ -36,14 +40,20 @@ pub async fn get_user(user_id: UserId) -> Option<User> {
     let filter = Some(bson::doc! {
       "discord_id": user_id.0
     });
-    User::find_one(&database(), filter, None).await.ok().flatten()
+    User::find_one(&database(), filter, None)
+        .await
+        .ok()
+        .flatten()
 }
 
 pub async fn get_guild(guild_id: GuildId) -> Option<Guild> {
     let filter = Some(bson::doc! {
       "discord_id": guild_id.0
     });
-    Guild::find_one(&database(), filter, None).await.ok().flatten()
+    Guild::find_one(&database(), filter, None)
+        .await
+        .ok()
+        .flatten()
 }
 
 pub async fn get_language(user_id: UserId, guild_id: Option<GuildId>) -> Language {

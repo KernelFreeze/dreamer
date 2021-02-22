@@ -4,25 +4,38 @@ mod fixtures;
 
 use std::collections::HashMap;
 
-use fixtures::{models::*, Fixture, User};
+use fixtures::models::*;
+use fixtures::{Fixture, User};
 use futures::stream::StreamExt;
 use wither::bson::doc;
 use wither::mongodb::options::{FindOneAndReplaceOptions, FindOneAndUpdateOptions, ReturnDocument};
-use wither::{prelude::*, IndexModel};
+use wither::prelude::*;
+use wither::IndexModel;
 
 //////////////////////////////////////////////////////////////////////////////
 // Model::find ///////////////////////////////////////////////////////////////
 #[tokio::test]
 async fn model_find_should_find_all_instances_of_model_with_no_filter_or_options() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
         email: "test@test.com".to_string(),
     };
-    user.save(&db, None).await.expect("Expected a successful save operation.");
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
 
-    let mut users_from_db: Vec<_> = User::find(&db, None, None).await.expect("Expected a successful lookup.").collect().await;
+    let mut users_from_db: Vec<_> = User::find(&db, None, None)
+        .await
+        .expect("Expected a successful lookup.")
+        .collect()
+        .await;
 
     assert_eq!(users_from_db.len(), 1);
     let userdb = users_from_db.pop().unwrap();
@@ -34,13 +47,20 @@ async fn model_find_should_find_all_instances_of_model_with_no_filter_or_options
 
 #[tokio::test]
 async fn model_find_should_find_instances_of_model_matching_filter() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
         email: "test@test.com".to_string(),
     };
-    user.save(&db, None).await.expect("Expected a successful save operation.");
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
     let doc = doc! {"_id": (user.id.clone().unwrap())};
 
     let mut users_from_db: Vec<_> = User::find(&db, Some(doc), None)
@@ -62,14 +82,21 @@ async fn model_find_should_find_instances_of_model_matching_filter() {
 
 #[tokio::test]
 async fn model_find_one_should_fetch_the_model_instance_matching_given_filter() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
         email: "test@test.com".to_string(),
     };
 
-    user.save(&db, None).await.expect("Expected a successful save operation.");
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
 
     let doc = doc! {"_id": (user.id.clone().unwrap())};
     let user_from_db = User::find_one(&db, Some(doc), None)
@@ -86,7 +113,12 @@ async fn model_find_one_should_fetch_the_model_instance_matching_given_filter() 
 
 #[tokio::test]
 async fn model_find_one_and_delete_should_delete_the_target_doc() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
@@ -97,8 +129,13 @@ async fn model_find_one_and_delete_should_delete_the_target_doc() {
         email: "test2@test.com".to_string(),
     };
 
-    user.save(&db, None).await.expect("Expected a successful save operation.");
-    user2.save(&db, None).await.expect("Expected a successful save operation.");
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
+    user2
+        .save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
     let output = User::find_one_and_delete(&db, doc! {"email": "test@test.com"}, None)
         .await
         .expect("Expected a operation.")
@@ -112,7 +149,12 @@ async fn model_find_one_and_delete_should_delete_the_target_doc() {
 
 #[tokio::test]
 async fn model_find_one_and_replace_should_replace_the_target_doc_and_return_new_doc() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
@@ -125,19 +167,34 @@ async fn model_find_one_and_replace_should_replace_the_target_doc_and_return_new
     let mut opts = FindOneAndReplaceOptions::builder().build();
     opts.return_document = Some(ReturnDocument::After);
 
-    user.save(&db, None).await.expect("Expected a successful save operation.");
-    user2.save(&db, None).await.expect("Expected a successful save operation.");
-    let output = User::find_one_and_replace(&db, doc! {"email": "test@test.com"}, doc! {"email": "test3@test.com"}, Some(opts))
+    user.save(&db, None)
         .await
-        .expect("Expected a operation.")
-        .unwrap();
+        .expect("Expected a successful save operation.");
+    user2
+        .save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
+    let output = User::find_one_and_replace(
+        &db,
+        doc! {"email": "test@test.com"},
+        doc! {"email": "test3@test.com"},
+        Some(opts),
+    )
+    .await
+    .expect("Expected a operation.")
+    .unwrap();
 
     assert_eq!(&output.email, "test3@test.com");
 }
 
 #[tokio::test]
 async fn model_find_one_and_replace_should_replace_the_target_doc_and_return_old_doc() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
@@ -150,12 +207,22 @@ async fn model_find_one_and_replace_should_replace_the_target_doc_and_return_old
     let mut opts = FindOneAndReplaceOptions::builder().build();
     opts.return_document = Some(ReturnDocument::Before);
 
-    user.save(&db, None).await.expect("Expected a successful save operation.");
-    user2.save(&db, None).await.expect("Expected a successful save operation.");
-    let output = User::find_one_and_replace(&db, doc! {"email": "test@test.com"}, doc! {"email": "test3@test.com"}, Some(opts))
+    user.save(&db, None)
         .await
-        .expect("Expected a operation.")
-        .unwrap();
+        .expect("Expected a successful save operation.");
+    user2
+        .save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
+    let output = User::find_one_and_replace(
+        &db,
+        doc! {"email": "test@test.com"},
+        doc! {"email": "test3@test.com"},
+        Some(opts),
+    )
+    .await
+    .expect("Expected a operation.")
+    .unwrap();
 
     assert_eq!(&output.email, "test@test.com");
 }
@@ -165,7 +232,12 @@ async fn model_find_one_and_replace_should_replace_the_target_doc_and_return_old
 
 #[tokio::test]
 async fn model_find_one_and_update_should_update_target_document_and_return_new() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
@@ -178,8 +250,13 @@ async fn model_find_one_and_update_should_update_target_document_and_return_new(
     let mut opts = FindOneAndUpdateOptions::builder().build();
     opts.return_document = Some(ReturnDocument::After);
 
-    user.save(&db, None).await.expect("Expected a successful save operation.");
-    user2.save(&db, None).await.expect("Expected a successful save operation.");
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
+    user2
+        .save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
     let output = User::find_one_and_update(
         &db,
         doc! {"email": "test@test.com"},
@@ -195,7 +272,12 @@ async fn model_find_one_and_update_should_update_target_document_and_return_new(
 
 #[tokio::test]
 async fn model_find_one_and_update_should_update_target_document_and_return_old() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
@@ -208,8 +290,13 @@ async fn model_find_one_and_update_should_update_target_document_and_return_old(
     let mut opts = FindOneAndUpdateOptions::builder().build();
     opts.return_document = Some(ReturnDocument::Before);
 
-    user.save(&db, None).await.expect("Expected a successful save operation.");
-    user2.save(&db, None).await.expect("Expected a successful save operation.");
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
+    user2
+        .save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
     let output = User::find_one_and_update(
         &db,
         doc! {"email": "test@test.com"},
@@ -228,16 +315,29 @@ async fn model_find_one_and_update_should_update_target_document_and_return_old(
 
 #[tokio::test]
 async fn model_save_should_save_model_instance_and_add_id() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
         email: "test@test.com".to_string(),
     };
 
-    let precount = User::collection(&db).count_documents(None, None).await.unwrap();
-    user.save(&db, None).await.expect("Expected a successful save operation.");
-    let postcount = User::collection(&db).count_documents(None, None).await.unwrap();
+    let precount = User::collection(&db)
+        .count_documents(None, None)
+        .await
+        .unwrap();
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
+    let postcount = User::collection(&db)
+        .count_documents(None, None)
+        .await
+        .unwrap();
 
     assert!(user.id != None);
     assert_eq!(precount, 0);
@@ -250,13 +350,20 @@ async fn model_save_should_save_model_instance_and_add_id() {
 
 #[tokio::test]
 async fn model_update_should_perform_expected_updates_against_self() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
         email: String::from("test@test.com"),
     };
-    user.save(&db, None).await.expect("Expected a successful save operation.");
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
     let update_doc = doc! {"$set": doc!{"email": "new@test.com"}};
     let mut opts = FindOneAndUpdateOptions::default();
     opts.return_document = Some(ReturnDocument::After);
@@ -271,13 +378,20 @@ async fn model_update_should_perform_expected_updates_against_self() {
 
 #[tokio::test]
 async fn model_update_should_return_error_with_invalid_update_document() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
         email: String::from("test@test.com"),
     };
-    user.save(&db, None).await.expect("Expected a successful save operation.");
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
     let update_doc = doc! {"invalid_update_key": "should_fail"};
 
     let err = user
@@ -287,19 +401,27 @@ async fn model_update_should_return_error_with_invalid_update_document() {
 
     assert_eq!(
         err.to_string(),
-        "An invalid argument was provided to a database operation: update document must have first key starting with '$"
+        "An invalid argument was provided to a database operation: update document must have \
+         first key starting with '$"
     );
 }
 
 #[tokio::test]
 async fn model_update_should_noop_where_filter_selects_on_nonextant_field() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
         email: String::from("test@test.com"),
     };
-    user.save(&db, None).await.expect("Expected a successful save operation.");
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
     let filter_doc = Some(doc! {"nonextant_field": doc!{"$exists": true}});
     let update_doc = doc! {"$set": doc!{"email": "test2@test.com"}};
 
@@ -310,13 +432,20 @@ async fn model_update_should_noop_where_filter_selects_on_nonextant_field() {
 
 #[tokio::test]
 async fn model_update_should_perform_expected_update_with_added_filters() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
         email: String::from("test@test.com"),
     };
-    user.save(&db, None).await.expect("Expected a successful save operation.");
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
     let filter_doc = Some(doc! {"nonextant_field": doc!{"$exists": false}});
     let update_doc = doc! {"$set": doc!{"email": "test2@test.com"}};
     let mut opts = FindOneAndUpdateOptions::default();
@@ -335,18 +464,34 @@ async fn model_update_should_perform_expected_update_with_added_filters() {
 
 #[tokio::test]
 async fn model_delete_should_delete_model_instance() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
         email: "test@test.com".to_string(),
     };
 
-    let presave = User::collection(&db).count_documents(None, None).await.unwrap();
-    user.save(&db, None).await.expect("Expected a successful save operation.");
-    let postsave = User::collection(&db).count_documents(None, None).await.unwrap();
+    let presave = User::collection(&db)
+        .count_documents(None, None)
+        .await
+        .unwrap();
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
+    let postsave = User::collection(&db)
+        .count_documents(None, None)
+        .await
+        .unwrap();
     user.delete(&db).await.unwrap();
-    let postdelete = User::collection(&db).count_documents(None, None).await.unwrap();
+    let postdelete = User::collection(&db)
+        .count_documents(None, None)
+        .await
+        .unwrap();
 
     assert_eq!(presave, 0);
     assert_eq!(postsave, 1);
@@ -360,7 +505,12 @@ async fn model_delete_should_delete_model_instance() {
 
 #[tokio::test]
 async fn model_delete_many_should_delete_all_documents() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
@@ -371,12 +521,26 @@ async fn model_delete_many_should_delete_all_documents() {
         email: "test2@test.com".to_string(),
     };
 
-    let presave = User::collection(&db).count_documents(None, None).await.unwrap();
-    user.save(&db, None).await.expect("Expected a successful save operation.");
-    user2.save(&db, None).await.expect("Expected a successful save operation.");
-    let postsave = User::collection(&db).count_documents(None, None).await.unwrap();
+    let presave = User::collection(&db)
+        .count_documents(None, None)
+        .await
+        .unwrap();
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
+    user2
+        .save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
+    let postsave = User::collection(&db)
+        .count_documents(None, None)
+        .await
+        .unwrap();
     let delete_result = User::delete_many(&db, doc! {}, None).await.unwrap();
-    let postdelete = User::collection(&db).count_documents(None, None).await.unwrap();
+    let postdelete = User::collection(&db)
+        .count_documents(None, None)
+        .await
+        .unwrap();
 
     assert_eq!(presave, 0);
     assert_eq!(postsave, 2);
@@ -388,7 +552,12 @@ async fn model_delete_many_should_delete_all_documents() {
 
 #[tokio::test]
 async fn model_delete_many_should_delete_all_filtered_documents() {
-    let fixture = Fixture::new().await.with_dropped_database().await.with_synced_models().await;
+    let fixture = Fixture::new()
+        .await
+        .with_dropped_database()
+        .await
+        .with_synced_models()
+        .await;
     let db = fixture.get_db();
     let mut user = User {
         id: None,
@@ -399,14 +568,34 @@ async fn model_delete_many_should_delete_all_filtered_documents() {
         email: "test2@test.com".to_string(),
     };
 
-    let presave = User::collection(&db).count_documents(None, None).await.unwrap();
-    user.save(&db, None).await.expect("Expected a successful save operation.");
-    user2.save(&db, None).await.expect("Expected a successful save operation.");
-    let postsave = User::collection(&db).count_documents(None, None).await.unwrap();
-    let delete_result = User::delete_many(&db, doc! { "email": "test@test.com".to_string() }, None).await.unwrap();
-    let postdelete = User::collection(&db).count_documents(None, None).await.unwrap();
+    let presave = User::collection(&db)
+        .count_documents(None, None)
+        .await
+        .unwrap();
+    user.save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
+    user2
+        .save(&db, None)
+        .await
+        .expect("Expected a successful save operation.");
+    let postsave = User::collection(&db)
+        .count_documents(None, None)
+        .await
+        .unwrap();
+    let delete_result = User::delete_many(&db, doc! { "email": "test@test.com".to_string() }, None)
+        .await
+        .unwrap();
+    let postdelete = User::collection(&db)
+        .count_documents(None, None)
+        .await
+        .unwrap();
 
-    let mut remaining_users_from_db: Vec<_> = User::find(&db, None, None).await.expect("Expected a successful lookup.").collect().await;
+    let mut remaining_users_from_db: Vec<_> = User::find(&db, None, None)
+        .await
+        .expect("Expected a successful lookup.")
+        .collect()
+        .await;
     let remaining_user_from_db = remaining_users_from_db.pop().unwrap();
     assert!(remaining_user_from_db.is_ok());
 
@@ -430,14 +619,20 @@ async fn model_sync_should_create_expected_indices_on_collection() {
     let db = fixture.get_db();
 
     // There should be no indexes now
-    let before_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db).await.expect("error getting current indexes");
+    let before_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
     assert!(before_indexes.is_empty());
 
     // It should sync the model
-    IndexTestV1::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV1::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db).await.expect("error getting current indexes");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
     let index_model = after_indexes.get("i_1").expect("Should have index: `i_1`");
     let index_key_value = index_model
         .keys
@@ -466,13 +661,19 @@ async fn model_sync_should_not_modify_indexes() {
     let db = fixture.get_db();
 
     // There should be no indexes now
-    let before_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db).await.expect("error getting current indexes");
+    let before_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
     assert!(before_indexes.is_empty());
 
-    IndexTestV1::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV1::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db).await.expect("error getting current indexes");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
     let index_model = after_indexes.get("i_1").expect("Should have index: `i_1`");
     let index_key_value = index_model
         .keys
@@ -494,10 +695,14 @@ async fn model_sync_should_not_modify_indexes() {
 
     assert_eq!(option_name_value, "i_1");
 
-    IndexTestV1::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV1::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db).await.expect("error getting current indexes");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
     let index_model = after_indexes.get("i_1").expect("Should have index: `i_1`");
     let index_key_value = index_model
         .keys
@@ -526,13 +731,19 @@ async fn model_sync_should_modify_indexes_v1_to_v2() {
     let db = fixture.get_db();
 
     // There should be no indexes now
-    let before_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db).await.expect("error getting current indexes");
+    let before_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
     assert!(before_indexes.is_empty());
 
-    IndexTestV1::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV1::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db).await.expect("error getting current indexes");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
     let index_model = after_indexes.get("i_1").expect("Should have index: `i_1`");
     let index_key_value = index_model
         .keys
@@ -554,11 +765,17 @@ async fn model_sync_should_modify_indexes_v1_to_v2() {
 
     assert_eq!(option_name_value, "i_1");
 
-    IndexTestV2::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV2::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db).await.expect("error getting current indexes");
-    let index_model = after_indexes.get("i_-1").expect("Should have index: `i_-1`");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV1::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
+    let index_model = after_indexes
+        .get("i_-1")
+        .expect("Should have index: `i_-1`");
     let index_key_value = index_model
         .keys
         .get("i")
@@ -586,14 +803,22 @@ async fn model_sync_should_modify_indexes_v2_to_v3() {
     let db = fixture.get_db();
 
     // There should be no indexes now
-    let before_indexes: HashMap<String, IndexModel> = IndexTestV2::get_current_indexes(&db).await.expect("error getting current indexes");
+    let before_indexes: HashMap<String, IndexModel> = IndexTestV2::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
     assert!(before_indexes.is_empty());
 
-    IndexTestV2::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV2::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV2::get_current_indexes(&db).await.expect("error getting current indexes");
-    let index_model = after_indexes.get("i_-1").expect("Should have index: `i_-1`");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV2::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
+    let index_model = after_indexes
+        .get("i_-1")
+        .expect("Should have index: `i_-1`");
     let index_key_value = index_model
         .keys
         .get("i")
@@ -614,11 +839,17 @@ async fn model_sync_should_modify_indexes_v2_to_v3() {
 
     assert_eq!(option_name_value, "i_-1");
 
-    IndexTestV3::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV3::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV3::get_current_indexes(&db).await.expect("error getting current indexes");
-    let index_model = after_indexes.get("i_-1").expect("Should have index: `i_-1`");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV3::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
+    let index_model = after_indexes
+        .get("i_-1")
+        .expect("Should have index: `i_-1`");
     let index_key_value = index_model
         .keys
         .get("i")
@@ -657,14 +888,22 @@ async fn model_sync_should_modify_indexes_v3_to_v4() {
     let db = fixture.get_db();
 
     // There should be no indexes now
-    let before_indexes: HashMap<String, IndexModel> = IndexTestV3::get_current_indexes(&db).await.expect("error getting current indexes");
+    let before_indexes: HashMap<String, IndexModel> = IndexTestV3::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
     assert!(before_indexes.is_empty());
 
-    IndexTestV3::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV3::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV3::get_current_indexes(&db).await.expect("error getting current indexes");
-    let index_model = after_indexes.get("i_-1").expect("Should have index: `i_-1`");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV3::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
+    let index_model = after_indexes
+        .get("i_-1")
+        .expect("Should have index: `i_-1`");
     let index_key_value = index_model
         .keys
         .get("i")
@@ -696,11 +935,17 @@ async fn model_sync_should_modify_indexes_v3_to_v4() {
 
     assert!(option_unique_value);
 
-    IndexTestV4::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV4::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV4::get_current_indexes(&db).await.expect("error getting current indexes");
-    let index_model = after_indexes.get("i_-1").expect("Should have index: `i_-1`");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV4::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
+    let index_model = after_indexes
+        .get("i_-1")
+        .expect("Should have index: `i_-1`");
     let index_key_value = index_model
         .keys
         .get("i")
@@ -749,11 +994,17 @@ async fn model_sync_should_modify_indexes_v4_to_v5() {
     let fixture = Fixture::new().await.with_dropped_database().await;
     let db = fixture.get_db();
 
-    IndexTestV4::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV4::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV4::get_current_indexes(&db).await.expect("error getting current indexes");
-    let index_model = after_indexes.get("i_-1").expect("Should have index: `i_-1`");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV4::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
+    let index_model = after_indexes
+        .get("i_-1")
+        .expect("Should have index: `i_-1`");
     let index_key_value = index_model
         .keys
         .get("i")
@@ -795,11 +1046,17 @@ async fn model_sync_should_modify_indexes_v4_to_v5() {
         .expect("Should be a valid boolean");
 
     assert!(option_background_value);
-    IndexTestV4::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV4::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV4::get_current_indexes(&db).await.expect("error getting current indexes");
-    let index_model = after_indexes.get("i_-1").expect("Should have index: `i_-1`");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV4::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
+    let index_model = after_indexes
+        .get("i_-1")
+        .expect("Should have index: `i_-1`");
     let index_key_value = index_model
         .keys
         .get("i")
@@ -848,11 +1105,17 @@ async fn model_sync_should_modify_indexes_v5_to_v6() {
     let fixture = Fixture::new().await.with_dropped_database().await;
     let db = fixture.get_db();
 
-    IndexTestV5::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV5::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV5::get_current_indexes(&db).await.expect("error getting current indexes");
-    let index_model = after_indexes.get("i_-1").expect("Should have index: `i_-1`");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV5::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
+    let index_model = after_indexes
+        .get("i_-1")
+        .expect("Should have index: `i_-1`");
     let index_key_value = index_model
         .keys
         .get("i")
@@ -895,10 +1158,14 @@ async fn model_sync_should_modify_indexes_v5_to_v6() {
 
     assert!(option_background_value);
 
-    IndexTestV6::sync(&db).await.expect("Expected a successful sync operation.");
+    IndexTestV6::sync(&db)
+        .await
+        .expect("Expected a successful sync operation.");
 
     // After the sync there should be the expected indexes
-    let after_indexes: HashMap<String, IndexModel> = IndexTestV6::get_current_indexes(&db).await.expect("error getting current indexes");
+    let after_indexes: HashMap<String, IndexModel> = IndexTestV6::get_current_indexes(&db)
+        .await
+        .expect("error getting current indexes");
 
     assert!(after_indexes.is_empty());
 }
