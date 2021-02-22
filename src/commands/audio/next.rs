@@ -15,16 +15,13 @@ async fn next(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .ok_or("Voice client was not initialized")?
         .clone();
 
-    if let Some(handler_lock) = manager.get(guild_id) {
-        let handler = handler_lock.lock().await;
-        let queue = handler.queue();
-        let _ = queue.skip();
+    let handler_lock = manager.get(guild_id).ok_or("Not in a voice channel")?;
+    let handler = handler_lock.lock().await;
+    let queue = handler.queue();
+    queue.skip()?;
 
-        msg.reply(ctx, format!("Song skipped: {} in queue.", queue.len()))
-            .await?;
-    } else {
-        msg.reply(ctx, "Not in a voice channel to play in").await?;
-    }
+    msg.reply(ctx, format!("Song skipped: {} in queue.", queue.len() - 1))
+        .await?;
 
     Ok(())
 }

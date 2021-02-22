@@ -12,7 +12,7 @@ use tokio::task;
 
 use super::restartable::Restart;
 
-const YOUTUBE_DL_COMMAND: &'static str = "youtube-dl";
+const YOUTUBE_DL_COMMAND: &str = "youtube-dl";
 
 pub enum YouTubeType {
     Uri(VideoMetadata),
@@ -39,6 +39,7 @@ impl YouTubeRestarter {
 
                 self.uri = YouTubeType::Uri(VideoMetadata {
                     url: result.video_id.clone(),
+                    title: Some(result.title.clone()),
                     search_query: Some(query.clone()),
                     ..Default::default()
                 });
@@ -64,9 +65,6 @@ impl Restart for YouTubeRestarter {
     }
 
     async fn lazy_init(&mut self) -> Result<(Codec, Container)> {
-        // _ytdl_metadata(self.convert_url().await?.as_ref())
-        //     .await
-        //     .map(|m| (Some(m), Codec::FloatPcm, Container::Raw))
         Ok((Codec::FloatPcm, Container::Raw))
     }
 }

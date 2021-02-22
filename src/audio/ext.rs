@@ -26,8 +26,8 @@ impl<R: Read + Sized> ReadAudioExt for R {
         // e.g., 4.
         const SAMPLE_LEN: usize = mem::size_of::<f32>();
         const FLOAT_COUNT: usize = 512;
-        let mut simd_float_bytes = [0u8; FLOAT_COUNT * SAMPLE_LEN];
-        let mut simd_float_buf = [0f32; FLOAT_COUNT];
+        let mut simd_float_bytes = [0_u8; FLOAT_COUNT * SAMPLE_LEN];
+        let mut simd_float_buf = [0_f32; FLOAT_COUNT];
 
         let mut frame_pos = 0;
 

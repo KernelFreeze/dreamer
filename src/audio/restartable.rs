@@ -19,7 +19,7 @@ use songbird::input::error::Result;
 use songbird::input::{utils, Codec, Container, Input, Reader};
 use tokio::runtime::Handle;
 
-use super::audio_ext::ReadAudioExt;
+use super::ext::ReadAudioExt;
 
 type Recreator = Box<dyn Restart + Send + 'static>;
 type RecreateChannel = Receiver<Result<(Box<Input>, Recreator)>>;
@@ -120,7 +120,6 @@ impl From<Restartable> for Input {
 // How do these work at a high level?
 // If you need to restart, send a request to do this to the async context.
 // if a request is pending, then just output all zeroes.
-
 impl Read for Restartable {
     fn read(&mut self, buffer: &mut [u8]) -> IoResult<usize> {
         let (out_val, march_pos, next_source) = match &mut self.source {
@@ -206,9 +205,8 @@ impl Seek for Restartable {
     fn seek(&mut self, pos: SeekFrom) -> IoResult<u64> {
         let _local_pos = self.position as u64;
 
-        use SeekFrom::*;
         match pos {
-            Start(offset) => {
+            SeekFrom::Start(offset) => {
                 let offset = offset as usize;
                 let handle = self.async_handle.clone();
 
@@ -262,11 +260,11 @@ impl Seek for Restartable {
 
                 Ok(offset as u64)
             },
-            End(_offset) => Err(IoError::new(
+            SeekFrom::End(_offset) => Err(IoError::new(
                 IoErrorKind::InvalidInput,
                 "End point for Restartables is not known.",
             )),
-            Current(_offset) => unimplemented!(),
+            SeekFrom::Current(_offset) => unimplemented!(),
         }
     }
 }

@@ -12,33 +12,33 @@ use strfmt::strfmt;
 static TRANSLATIONS: SyncLazy<HashMap<Language, HashMap<String, String>>> = SyncLazy::new(|| {
     let mut v = HashMap::new();
     v.insert(
-        Language::ENGLISH,
-        load_language(Language::ENGLISH).expect("Failed to load english language"),
+        Language::English,
+        load_language(Language::English).expect("Failed to load english language"),
     );
     v.insert(
-        Language::SPANISH,
-        load_language(Language::SPANISH).expect("Failed to load spanish language"),
+        Language::Spanish,
+        load_language(Language::Spanish).expect("Failed to load spanish language"),
     );
     v
 });
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Eq, PartialOrd, Ord, Hash, Clone, Copy)]
 pub enum Language {
-    ENGLISH,
-    SPANISH,
+    English,
+    Spanish,
 }
 
 impl Default for Language {
     fn default() -> Self {
-        Language::ENGLISH
+        Language::English
     }
 }
 
 impl From<&Language> for &'static str {
     fn from(lang: &Language) -> &'static str {
         match lang {
-            Language::ENGLISH => "en",
-            Language::SPANISH => "es",
+            Language::English => "en",
+            Language::Spanish => "es",
         }
     }
 }
@@ -51,32 +51,33 @@ impl Display for Language {
 }
 
 impl Language {
-    pub fn get_default(key: &str) -> Result<&'static String, String> {
+    pub fn get_default(key: &str) -> Result<&'static str, String> {
         Language::default().get_option(key)
     }
 
-    pub fn get_option(&self, key: &str) -> Result<&'static String, String> {
+    pub fn get_option(self, key: &str) -> Result<&'static str, String> {
         TRANSLATIONS
-            .get(self)
+            .get(&self)
             .ok_or(format!("{:?} language was not initialized", self))
             .map(|v| {
                 v.get(key)
                     .ok_or(format!("{} was not found in {}", key, self))
             })
             .flatten()
+            .map(|s| &s[..])
     }
 
-    pub fn get(&self, key: &str) -> Result<&'static String, String> {
+    pub fn get(self, key: &str) -> Result<&'static str, String> {
         let res = self.get_option(key);
-        if let Err(_) = res {
+        if res.is_err() {
             return Language::get_default(key);
         }
         res
     }
 
-    pub fn translate(&self, key: &str, data: Value) -> Result<String, Box<dyn Error>> {
+    pub fn translate(self, key: &str, data: Value) -> Result<String, Box<dyn Error>> {
         let vars: HashMap<String, String> = HashMap::deserialize(data)?;
-        let translated = strfmt(&self.get(key)?, &vars)?;
+        let translated = strfmt(self.get(key)?, &vars)?;
         Ok(translated)
     }
 }

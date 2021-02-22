@@ -4,9 +4,9 @@ mod guild_settings;
 mod latency;
 mod settings;
 
-use self::guild_settings::*;
-use self::latency::*;
-use self::settings::*;
+use self::guild_settings::GUILD_SETTINGS_COMMAND;
+use self::latency::LATENCY_COMMAND;
+use self::settings::SETTINGS_COMMAND;
 
 #[group]
 #[commands(settings, guild_settings, latency)]

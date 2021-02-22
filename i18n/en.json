@@ -1,3 +1,4 @@
 {
-    "command.error.internal": "Failed to process this command. {error}"
+    "command.error.internal": "Failed to process this command. {error}",
+    "command.error.title": "Error"
 }

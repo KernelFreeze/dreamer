@@ -1,9 +1,11 @@
 #![feature(once_cell)]
+#![feature(box_syntax)]
 #![feature(result_flattening)]
 #![deny(clippy::unwrap_in_result)]
 #![deny(clippy::unwrap_used)]
 #![deny(clippy::pedantic)]
 #![deny(unused_must_use)]
+#![allow(clippy::module_name_repetitions)]
 
 use std::collections::HashSet;
 use std::env;
@@ -27,6 +29,7 @@ mod database;
 mod events;
 mod hooks;
 mod lang;
+mod spotify;
 
 // A container type is created for inserting into the Client's `data`, which
 // allows for data to be accessible across all events and framework commands, or

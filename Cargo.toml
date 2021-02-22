@@ -22,6 +22,7 @@ regex = "1.4.3"
 rspotify = { path = "crates/rspotify" }
 flume = "0.10.2"
 byteorder = "1.4.2"
+humantime = "2.1.0"
 
 [dependencies.serenity]
 version = "0.10.2"

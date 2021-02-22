@@ -6,7 +6,7 @@ use serenity::model::channel::Message;
 #[command]
 #[only_in(guilds)]
 async fn stop(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;
     let guild_id = guild.id;
 
     let manager = songbird::get(ctx)
@@ -14,15 +14,11 @@ async fn stop(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .ok_or("Voice client was not initialized")?
         .clone();
 
-    if let Some(handler_lock) = manager.get(guild_id) {
-        let handler = handler_lock.lock().await;
-        let queue = handler.queue();
-        let _ = queue.stop();
-
-        msg.reply(ctx, "Queue cleared.").await?;
-    } else {
-        msg.reply(ctx, "Not in a voice channel to play in").await?;
-    }
+    let handler_lock = manager.get(guild_id).ok_or("Not in a voice channel")?;
+    let handler = handler_lock.lock().await;
+    let queue = handler.queue();
+    queue.stop();
+    msg.reply(ctx, "Queue cleared.").await?;
 
     Ok(())
 }

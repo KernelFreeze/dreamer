@@ -1,4 +1,13 @@
+- Detect channel bitrate changes
+- Shuffle
 - Autojoin on play music
+- Show error when fails to play
+- Prevent rejoin
+- Send current playing message
+- Effects
+- Fast Forward/Rewind
+- Lyrics
+- Volume
+- Radios (Lofi, Kernel...)
 - Configurable play permissions (only when connected to channel?)
-- Help command
 - Translation settings
