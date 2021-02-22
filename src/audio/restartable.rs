@@ -273,22 +273,25 @@ fn regenerate_channel(
     mut rec: Recreator, offset: usize, stereo: bool, kind: Codec, container: Container,
     handle: Option<Handle>,
 ) -> IoResult<LazyProgress> {
-    if let Some(handle) = handle.as_ref() {
-        let (tx, rx) = flume::bounded(1);
+    handle.as_ref().map_or_else(
+        || {
+            Err(IoError::new(
+                IoErrorKind::Interrupted,
+                "Cannot safely call seek until provided an async context handle.",
+            ))
+        },
+        |handle| {
+            let (tx, rx) = flume::bounded(1);
 
-        handle.spawn(async move {
-            let ret_val = rec
-                .call_restart(Some(utils::byte_count_to_timestamp(offset, stereo)))
-                .await;
+            handle.spawn(async move {
+                let ret_val = rec
+                    .call_restart(Some(utils::byte_count_to_timestamp(offset, stereo)))
+                    .await;
 
-            let _ = tx.send(ret_val.map(Box::new).map(|v| (v, rec)));
-        });
+                let _sent = tx.send(ret_val.map(Box::new).map(|v| (v, rec)));
+            });
 
-        Ok(LazyProgress::Working(kind, container, stereo, rx))
-    } else {
-        Err(IoError::new(
-            IoErrorKind::Interrupted,
-            "Cannot safely call seek until provided an async context handle.",
-        ))
-    }
+            Ok(LazyProgress::Working(kind, container, stereo, rx))
+        },
+    )
 }

@@ -9,7 +9,7 @@ use serenity::model::channel::Message;
 #[bucket = "basic"]
 #[description = "Leave a voice channel."]
 async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
-    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;
     let guild_id = guild.id;
 
     let manager = songbird::get(ctx)

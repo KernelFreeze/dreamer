@@ -41,7 +41,7 @@ impl YouTubeRestarter {
                     url: result.video_id.clone(),
                     title: Some(result.title.clone()),
                     search_query: Some(query.clone()),
-                    ..Default::default()
+                    ..VideoMetadata::default()
                 });
                 result.video_id.clone()
             },
@@ -117,12 +117,11 @@ async fn _ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
         .spawn()?;
 
     // This rigmarole is required due to the inner synchronous reading context.
-    let stderr = youtube_dl.stderr.take();
+    let mut stderr = youtube_dl.stderr.take().ok_or(Error::Stdout)?;
     let (returned_stderr, value) = task::spawn_blocking(move || {
-        let mut s = stderr.unwrap();
         let out: Result<Value> = {
             let mut o_vec = vec![];
-            let mut serde_read = BufReader::new(s.by_ref());
+            let mut serde_read = BufReader::new(stderr.by_ref());
             // Newline...
             if let Ok(len) = serde_read.read_until(0xA, &mut o_vec) {
                 serde_json::from_slice(&o_vec[..len]).map_err(|err| Error::Json {
@@ -134,7 +133,7 @@ async fn _ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
             }
         };
 
-        (s, out)
+        (stderr, out)
     })
     .await
     .map_err(|_| Error::Metadata)?;

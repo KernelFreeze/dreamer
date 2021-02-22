@@ -3,9 +3,8 @@
 #![feature(result_flattening)]
 #![deny(clippy::unwrap_in_result)]
 #![deny(clippy::unwrap_used)]
-#![deny(clippy::pedantic)]
 #![deny(unused_must_use)]
-#![allow(clippy::module_name_repetitions)]
+#![warn(clippy::pedantic)]
 
 use std::collections::HashSet;
 use std::env;

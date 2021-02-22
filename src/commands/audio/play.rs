@@ -57,7 +57,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let videos = get_videos(&query).await;
     let videos_length = videos.len();
 
-    let guild = msg.guild(&ctx.cache).await.unwrap();
+    let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;
     let guild_id = guild.id;
 
     let manager = songbird::get(ctx)
@@ -69,18 +69,20 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let mut handler = handler_lock.lock().await;
 
     // Early exit if no videos found
-    if videos_length <= 0 {
+    if videos_length == 0 {
         return Err("No search results found.".into());
     }
 
     let mut video_list = videos
         .iter()
         .take(10)
-        .filter_map(|audio| match audio {
-            YouTubeType::Uri(metadata) => metadata.title.clone(),
-            YouTubeType::Search(query) => Some(query.clone()),
+        .filter_map(|youtube| {
+            let element = match youtube {
+                YouTubeType::Uri(metadata) => metadata.title.clone(),
+                YouTubeType::Search(query) => Some(query.clone()),
+            }?;
+            Some(format!("\u{279c} {}", element))
         })
-        .map(|element| format!("\u{279c} {}", element))
         .collect::<Vec<String>>()
         .join("\n");
     if video_list.is_empty() {
