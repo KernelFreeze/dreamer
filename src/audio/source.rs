@@ -202,9 +202,9 @@ pub async fn ytdl_metadata(uri: &str) -> Result<Vec<VideoMetadata>> {
 
     let out = Cursor::new(youtube_dl_output.stderr)
         .lines()
-        .filter_map(|value| value.ok())
+        .filter_map(std::result::Result::ok)
         .map(|line| serde_json::from_str(&line))
-        .filter_map(|value| value.ok())
+        .filter_map(std::result::Result::ok)
         .collect();
 
     Ok(out)

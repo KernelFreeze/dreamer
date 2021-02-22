@@ -20,7 +20,7 @@ use serenity::client::Client;
 use serenity::framework::StandardFramework;
 use serenity::http::Http;
 use serenity::prelude::*;
-use simplelog::*;
+use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger};
 use songbird::SerenityInit;
 
 mod audio;

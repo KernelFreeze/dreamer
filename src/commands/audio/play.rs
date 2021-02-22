@@ -70,7 +70,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
     // Early exit if no videos found
     if videos_length <= 0 {
-        Err("No search results found.")?;
+        return Err("No search results found.".into());
     }
 
     let mut video_list = videos
@@ -84,7 +84,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         .collect::<Vec<String>>()
         .join("\n");
     if video_list.is_empty() {
-        video_list = format!("\u{279c} (Titles not displayed)");
+        video_list = "\u{279c} (Titles not displayed)".to_string();
     }
 
     // Add all videos to the queue
