@@ -2,7 +2,7 @@ use std::io::{self, ErrorKind as IoErrorKind, Read};
 use std::mem;
 
 use byteorder::{LittleEndian, ReadBytesExt};
-use log::error;
+use tracing::error;
 use songbird::constants::{MONO_FRAME_BYTE_SIZE, STEREO_FRAME_BYTE_SIZE, STEREO_FRAME_SIZE};
 
 /// Extension trait to pull frames of audio from a byte source.

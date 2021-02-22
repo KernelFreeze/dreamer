@@ -20,7 +20,8 @@ async fn next(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let queue = handler.queue();
     queue.skip()?;
 
-    msg.reply(ctx, format!("Song skipped: {} in queue.", queue.len() - 1))
+    let remaining = queue.len().max(1) - 1;
+    msg.reply(ctx, format!("Song skipped: {} in queue.", remaining))
         .await?;
 
     Ok(())

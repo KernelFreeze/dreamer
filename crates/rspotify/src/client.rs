@@ -4,7 +4,7 @@ use std::path::PathBuf;
 
 use chrono::prelude::*;
 use derive_builder::Builder;
-use log::error;
+use tracing::error;
 use maybe_async::maybe_async;
 use serde::Deserialize;
 use serde_json::map::Map;

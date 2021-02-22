@@ -13,13 +13,12 @@ use std::fs::File;
 use std::sync::Arc;
 
 use dotenv::dotenv;
-use log::warn;
+use tracing::warn;
 use serenity::client::bridge::gateway::ShardManager;
 use serenity::client::Client;
 use serenity::framework::StandardFramework;
 use serenity::http::Http;
 use serenity::prelude::*;
-use simplelog::{CombinedLogger, Config, LevelFilter, TermLogger, TerminalMode, WriteLogger};
 use songbird::SerenityInit;
 
 mod audio;
@@ -46,14 +45,7 @@ async fn init_data_manager(client: &Client) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    CombinedLogger::init(vec![
-        TermLogger::new(LevelFilter::Warn, Config::default(), TerminalMode::Mixed),
-        WriteLogger::new(
-            LevelFilter::Warn,
-            Config::default(),
-            File::create("bot.log")?,
-        ),
-    ])?;
+    tracing_subscriber::fmt::init();
 
     // Fetch environment variables from .env file
     if let Err(err) = dotenv() {

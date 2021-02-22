@@ -77,7 +77,7 @@ impl ReqwestClient {
         request = add_data(request);
 
         // Finally performing the request and handling the response
-        log::info!("Making request {:?}", request);
+        tracing::info!("Making request {:?}", request);
         let response = request.send().await?;
 
         if response.status().is_success() {

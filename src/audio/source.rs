@@ -9,11 +9,13 @@ use songbird::input::error::{Error, Result};
 use songbird::input::{Codec, Container, Input, Metadata, Reader};
 use tokio::process::Command as TokioCommand;
 use tokio::task;
+use tracing::info;
 
 use super::restartable::Restart;
 
 const YOUTUBE_DL_COMMAND: &str = "youtube-dl";
 
+#[derive(Debug, Clone)]
 pub enum YouTubeType {
     Uri(VideoMetadata),
     Search(String),
@@ -48,6 +50,13 @@ impl YouTubeRestarter {
         };
         Ok(result)
     }
+
+    fn title(&self) -> Option<String> {
+        match &self.uri {
+            YouTubeType::Uri(meta) => meta.title.clone(),
+            YouTubeType::Search(title) => Some(title.clone()),
+        }
+    }
 }
 
 #[async_trait]
@@ -58,31 +67,68 @@ impl Restart for YouTubeRestarter {
         if let Some(time) = time {
             let ts = format!("{}.{}", time.as_secs(), time.subsec_millis());
 
-            _ytdl(&uri, &["-ss", &ts]).await
+            ytdl(&uri, &["-ss", &ts]).await
         } else {
-            ytdl(&uri).await
+            ytdl(&uri, &[]).await
         }
     }
 
-    async fn lazy_init(&mut self) -> Result<(Codec, Container)> {
-        Ok((Codec::FloatPcm, Container::Raw))
+    async fn lazy_init(&mut self) -> Result<(String, Codec, Container)> {
+        Ok((
+            self.title().unwrap_or(String::from("Unknown")),
+            Codec::FloatPcm,
+            Container::Raw,
+        ))
     }
 }
 
-/// Creates a streamed audio source with `youtube-dl` and `ffmpeg`.
-///
-/// This source is not seek-compatible.
-/// If you need looping or track seeking, then consider using
-/// [`Restartable::ytdl`].
-///
-/// Uses `youtube-dlc` if the `"youtube-dlc"` feature is enabled.
-///
-/// [`Restartable::ytdl`]: crate::input::restartable::Restartable::ytdl
-pub async fn ytdl(uri: &str) -> Result<Input> {
-    _ytdl(uri, &[]).await
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct VideoMetadata {
+    pub id: Option<String>,
+    pub url: String,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub duration: Option<f64>,
+    pub view_count: Option<u64>,
+    pub uploader: Option<String>,
+    pub search_query: Option<String>,
 }
 
-async fn _ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
+pub async fn ytdl_metadata(uri: &str) -> Result<Vec<VideoMetadata>> {
+    // Most of these flags are likely unused, but we want identical search
+    // and/or selection as the above functions.
+    let ytdl_args = [
+        "--dump-json",
+        "-f", // format
+        "webm[abr>0]/bestaudio/best",
+        "-R", // retries
+        "10",
+        "--youtube-skip-dash-manifest",
+        "--ignore-config",
+        "--no-warnings",
+        "--flat-playlist",
+        uri,
+        "-o",
+        "-",
+    ];
+
+    let youtube_dl_output = TokioCommand::new(YOUTUBE_DL_COMMAND)
+        .args(&ytdl_args)
+        .stdin(Stdio::null())
+        .output()
+        .await?;
+
+    let out = Cursor::new(youtube_dl_output.stderr)
+        .lines()
+        .filter_map(std::result::Result::ok)
+        .map(|line| serde_json::from_str(&line))
+        .filter_map(std::result::Result::ok)
+        .collect();
+
+    Ok(out)
+}
+
+async fn ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
     let ytdl_args = [
         "--print-json",
         "-f",
@@ -154,6 +200,7 @@ async fn _ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
 
     let metadata = Metadata::from_ytdl_output(value?);
 
+    info!("Playing song {:?}", metadata);
     Ok(Input::new(
         true,
         Reader::from(vec![youtube_dl, ffmpeg]),
@@ -161,50 +208,4 @@ async fn _ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
         Container::Raw,
         Some(metadata),
     ))
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct VideoMetadata {
-    pub id: Option<String>,
-    pub url: String,
-    pub title: Option<String>,
-    pub description: Option<String>,
-    pub duration: Option<f64>,
-    pub view_count: Option<u64>,
-    pub uploader: Option<String>,
-    pub search_query: Option<String>,
-}
-
-pub async fn ytdl_metadata(uri: &str) -> Result<Vec<VideoMetadata>> {
-    // Most of these flags are likely unused, but we want identical search
-    // and/or selection as the above functions.
-    let ytdl_args = [
-        "--dump-json",
-        "-f", // format
-        "webm[abr>0]/bestaudio/best",
-        "-R", // retries
-        "10",
-        "--youtube-skip-dash-manifest",
-        "--ignore-config",
-        "--no-warnings",
-        "--flat-playlist",
-        uri,
-        "-o",
-        "-",
-    ];
-
-    let youtube_dl_output = TokioCommand::new(YOUTUBE_DL_COMMAND)
-        .args(&ytdl_args)
-        .stdin(Stdio::null())
-        .output()
-        .await?;
-
-    let out = Cursor::new(youtube_dl_output.stderr)
-        .lines()
-        .filter_map(std::result::Result::ok)
-        .map(|line| serde_json::from_str(&line))
-        .filter_map(std::result::Result::ok)
-        .collect();
-
-    Ok(out)
 }

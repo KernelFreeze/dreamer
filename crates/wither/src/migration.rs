@@ -18,12 +18,12 @@ pub trait Migrating: Model {
         let migrations = Self::migrations();
 
         // Execute each migration.
-        log::info!("Starting migrations for '{}'.", ns);
+        tracing::info!("Starting migrations for '{}'.", ns);
         for migration in migrations {
             migration.execute(&coll).await?;
         }
 
-        log::info!("Finished migrations for '{}'.", ns);
+        tracing::info!("Finished migrations for '{}'.", ns);
         Ok(())
     }
 }
@@ -69,11 +69,11 @@ pub struct IntervalMigration {
 impl Migration for IntervalMigration {
     async fn execute<'c>(&self, coll: &'c Collection) -> Result<()> {
         let ns = coll.namespace();
-        log::info!("Executing migration '{}' against '{}'.", &self.name, ns);
+        tracing::info!("Executing migration '{}' against '{}'.", &self.name, ns);
 
         // If the migrations threshold has been passed, then no-op.
         if chrono::Utc::now() > self.threshold {
-            log::info!(
+            tracing::info!(
                 "Successfully executed migration '{}' against '{}'. No-op.",
                 &self.name,
                 ns
@@ -106,7 +106,7 @@ impl Migration for IntervalMigration {
         let res = coll
             .update_many(self.filter.clone(), update, Some(options))
             .await?;
-        log::info!(
+        tracing::info!(
             "Successfully executed migration '{}' against '{}'. {} matched. {} modified.",
             &self.name,
             ns,

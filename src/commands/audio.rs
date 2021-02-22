@@ -26,7 +26,8 @@ use self::queue::QUEUE_COMMAND;
 use self::resume::RESUME_COMMAND;
 use self::seek::SEEK_COMMAND;
 use self::stop::STOP_COMMAND;
+use self::lyrics::LYRICS_COMMAND;
 
 #[group]
-#[commands(join, leave, play, next, queue, stop, pause, resume, seek)]
+#[commands(join, leave, play, next, queue, stop, pause, resume, seek, lyrics)]
 struct Audio;

@@ -7,3 +7,4 @@ https://discord.com/api/oauth2/authorize?client_id=811968112991666199&permission
 - sudo apt install ffmpeg
 - python3 -m pip install youtube-dl
 - python3 -m pip install ytmusicapi
+- python3 -m pip install lyrics_extractor

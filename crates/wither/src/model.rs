@@ -461,7 +461,7 @@ async fn sync_model_indexes<'a>(
     db: &'a Database, coll: &'a Collection, model_indexes: Vec<IndexModel>,
     current_indexes_map: HashMap<String, IndexModel>,
 ) -> Result<()> {
-    log::info!("Synchronizing indexes for '{}'.", coll.namespace());
+    tracing::info!("Synchronizing indexes for '{}'.", coll.namespace());
 
     // Build a mapping of aspired indexes based on the model's declared indexes.
     let aspired_indexes_map = model_indexes.iter().fold(HashMap::new(), |mut acc, model| {
@@ -556,7 +556,7 @@ async fn sync_model_indexes<'a>(
         .await?;
     }
 
-    log::info!("Synchronized indexes for '{}'.", coll.namespace());
+    tracing::info!("Synchronized indexes for '{}'.", coll.namespace());
 
     Ok(())
 }

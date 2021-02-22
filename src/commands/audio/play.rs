@@ -1,11 +1,16 @@
 use std::lazy::SyncLazy;
+use std::sync::Arc;
+use std::time::Duration;
 
 use regex::Regex;
+use serenity::async_trait;
 use serenity::client::Context;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
-use serenity::model::channel::Message;
+use serenity::http::Http;
+use serenity::model::channel::{GuildChannel, Message};
 use serenity::utils::Colour;
+use songbird::{tracks, Event, EventContext, EventHandler as VoiceEventHandler, TrackEvent};
 
 use crate::audio::restartable::Restartable;
 use crate::audio::source::{ytdl_metadata, YouTubeRestarter, YouTubeType};
@@ -68,6 +73,8 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let handler_lock = manager.get(guild_id).ok_or("Not in a voice channel")?;
     let mut handler = handler_lock.lock().await;
 
+    let chan_id = msg.channel_id;
+
     // Early exit if no videos found
     if videos_length == 0 {
         return Err("No search results found.".into());
@@ -95,7 +102,15 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
             .await
             .map_err(|err| format!("Failed to process a video. Error: {:?}", err))?;
 
-        handler.enqueue_source(source.into());
+        let (track, song) = tracks::create_player(source.into());
+
+        if let Some(channel) = msg.channel(ctx).await.map(|c| c.guild()).flatten() {
+            let _ = song.add_event(Event::Delayed(Duration::from_secs(1)), SongStartNotifier {
+                channel,
+                http: ctx.http.clone(),
+            });
+        }
+        handler.enqueue(track);
 
         if !handler.is_deaf() {
             handler.deafen(true).await?;
@@ -103,7 +118,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     }
 
     // Show embed for every video
-    msg.channel_id
+    chan_id
         .send_message(&ctx.http, |m| {
             m.reference_message(msg);
             m.allowed_mentions(|f| f.replied_user(false));
@@ -132,4 +147,39 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         .await?;
 
     Ok(())
+}
+
+struct SongStartNotifier {
+    channel: GuildChannel,
+    http: Arc<Http>,
+}
+
+#[async_trait]
+impl VoiceEventHandler for SongStartNotifier {
+    async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
+        if let EventContext::Track(tracks) = ctx {
+            if let Some(track) = tracks.first() {
+                let title = track
+                    .1
+                    .metadata()
+                    .title
+                    .clone()
+                    .unwrap_or(String::from("default"));
+                let _ = self
+                    .channel
+                    .send_message(&self.http, |m| {
+                        m.embed(|e| {
+                            e.thumbnail(MUSIC_ICON);
+                            e.color(Colour::DARK_PURPLE);
+                            e.title("Now Playing");
+                            e.description(title);
+                            e
+                        });
+                        m
+                    })
+                    .await;
+            }
+        }
+        None
+    }
 }

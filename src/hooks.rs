@@ -1,4 +1,4 @@
-use log::error;
+use tracing::error;
 use serde_json::json;
 use serenity::framework::standard::macros::hook;
 use serenity::framework::standard::CommandError;

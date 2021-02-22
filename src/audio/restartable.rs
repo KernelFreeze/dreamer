@@ -16,7 +16,7 @@ use std::time::Duration;
 use flume::{Receiver, TryRecvError};
 use serenity::async_trait;
 use songbird::input::error::Result;
-use songbird::input::{utils, Codec, Container, Input, Reader};
+use songbird::input::{utils, Codec, Container, Input, Metadata, Reader};
 use tokio::runtime::Handle;
 
 use super::ext::ReadAudioExt;
@@ -26,7 +26,7 @@ type RecreateChannel = Receiver<Result<(Box<Input>, Recreator)>>;
 
 // Use options here to make "take" more doable from a mut ref.
 enum LazyProgress {
-    Dead(Option<Recreator>, Codec, Container),
+    Dead(String, Option<Recreator>, Codec, Container),
     Live(Box<Input>, Option<Recreator>),
     Working(Codec, Container, bool, RecreateChannel),
 }
@@ -66,11 +66,14 @@ impl Restartable {
     /// [`TrackHandle::make_playable`]:
     /// crate::tracks::TrackHandle::make_playable
     pub async fn new(mut recreator: impl Restart + Send + 'static) -> Result<Self> {
-        recreator.lazy_init().await.map(move |(kind, codec)| Self {
-            async_handle: Handle::try_current().ok(),
-            position: 0,
-            source: LazyProgress::Dead(Some(Box::new(recreator)), kind, codec),
-        })
+        recreator
+            .lazy_init()
+            .await
+            .map(move |(name, kind, codec)| Self {
+                async_handle: Handle::try_current().ok(),
+                position: 0,
+                source: LazyProgress::Dead(name, Some(Box::new(recreator)), kind, codec),
+            })
     }
 }
 
@@ -89,22 +92,30 @@ pub trait Restart {
     /// This is particularly useful for sources intended to be queued, which
     /// should occupy few resources when not live BUT have as much information
     /// as possible made available at creation.
-    async fn lazy_init(&mut self) -> Result<(Codec, Container)>;
+    async fn lazy_init(&mut self) -> Result<(String, Codec, Container)>;
 }
 
 impl From<Restartable> for Input {
     fn from(mut src: Restartable) -> Self {
         let (meta, stereo, kind, container) = match &mut src.source {
-            LazyProgress::Dead(_, kind, container) => (None, true, kind.clone(), *container),
+            LazyProgress::Dead(name, _, kind, container) => (
+                Metadata {
+                    title: Some(name.clone()),
+                    ..Metadata::default()
+                },
+                true,
+                kind.clone(),
+                *container,
+            ),
             LazyProgress::Live(ref mut input, _rec) => (
-                Some(input.metadata.take()),
+                input.metadata.take(),
                 input.stereo,
                 input.kind.clone(),
                 input.container,
             ),
             // This branch should never be taken: this is an emergency measure.
             LazyProgress::Working(kind, container, stereo, _) => {
-                (None, *stereo, kind.clone(), *container)
+                (Metadata::default(), *stereo, kind.clone(), *container)
             },
         };
         Input::new(
@@ -112,7 +123,7 @@ impl From<Restartable> for Input {
             Reader::ExtensionSeek(Box::new(src)),
             kind,
             container,
-            meta,
+            Some(meta),
         )
     }
 }
@@ -123,7 +134,7 @@ impl From<Restartable> for Input {
 impl Read for Restartable {
     fn read(&mut self, buffer: &mut [u8]) -> IoResult<usize> {
         let (out_val, march_pos, next_source) = match &mut self.source {
-            LazyProgress::Dead(rec, kind, container) => {
+            LazyProgress::Dead(_, rec, kind, container) => {
                 let handle = self.async_handle.clone();
                 let new_chan = if let Some(rec) = rec.take() {
                     Some(regenerate_channel(
@@ -211,7 +222,7 @@ impl Seek for Restartable {
                 let handle = self.async_handle.clone();
 
                 match &mut self.source {
-                    LazyProgress::Dead(rec, kind, container) => {
+                    LazyProgress::Dead(_, rec, kind, container) => {
                         // regen at given start point
                         self.source = if let Some(rec) = rec.take() {
                             regenerate_channel(rec, offset, true, kind.clone(), *container, handle)?

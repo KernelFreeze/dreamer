@@ -1,4 +1,3 @@
-- Detect channel bitrate changes
 - Shuffle
 - Autojoin on play music
 - Show error when fails to play

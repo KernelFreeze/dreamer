@@ -52,7 +52,7 @@ async fn do_things(spotify: Spotify) {
 #[tokio::main]
 async fn main() {
     // You can use any logger for debugging.
-    env_logger::init();
+    tracing_subscriber::fmt::init();
 
     // The default credentials from the `.env` file will be used by default.
     let creds = CredentialsBuilder::from_env().build().unwrap();

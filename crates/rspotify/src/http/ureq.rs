@@ -37,7 +37,7 @@ impl UreqClient {
             }
         }
 
-        log::info!("Making request {:?}", request);
+        tracing::info!("Making request {:?}", request);
         match send_request(request) {
             // Successful request
             Ok(response) => response.into_string().map_err(Into::into),

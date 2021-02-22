@@ -4,7 +4,7 @@ use rspotify::oauth2::CredentialsBuilder;
 #[tokio::main]
 async fn main() {
     // You can use any logger for debugging.
-    env_logger::init();
+    tracing_subscriber::fmt::init();
 
     // Set RSPOTIFY_CLIENT_ID, RSPOTIFY_CLIENT_SECRET and
     // RSPOTIFY_REDIRECT_URI in an .env file or export them manually:
