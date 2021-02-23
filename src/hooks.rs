@@ -6,9 +6,7 @@ use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::utils::Colour;
 
-use crate::database::get_language;
-
-const ERROR_MARK: &str = "https://media.discordapp.net/attachments/811977842060951613/813408904750694440/016-caution.png";
+use crate::{constants::ERROR_MARK, database::get_language};
 
 #[hook]
 pub async fn after_hook(

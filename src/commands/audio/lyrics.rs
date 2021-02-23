@@ -4,27 +4,18 @@ use serenity::framework::standard::{Args, CommandError, CommandResult};
 use serenity::model::channel::Message;
 use serenity::utils::Colour;
 
-const LYRICS_ICON: &str =
-    "https://cdn.discordapp.com/attachments/811977842060951613/813435400907391016/Lyrics.png";
+use crate::{audio::queue, constants::LYRICS_ICON};
 
 async fn get_current_song(ctx: &Context, msg: &Message) -> Result<String, CommandError> {
     let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;
     let guild_id = guild.id;
 
-    let manager = songbird::get(ctx)
-        .await
-        .ok_or("Voice client was not initialized")?
-        .clone();
-    let handler_lock = manager
-        .get(guild_id)
-        .ok_or("Failed to fetch current guild")?;
-    let handler = handler_lock.lock().await;
-    let track = handler.queue().current();
-    let name = track
-        .map(|track| track.metadata().title.clone())
-        .flatten()
-        .ok_or("Failed to get current track")?;
-    Ok(name)
+    let mut queues = queue::get_queues_mut().await;
+    let current = queue::get(&mut queues, guild_id)
+        .current_mut()
+        .ok_or("Failed to fetch current song")?;
+    let title = current.title().ok_or("Failed to fetch current song")?;
+    Ok(title.into())
 }
 
 #[command]

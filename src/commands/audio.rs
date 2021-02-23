@@ -19,15 +19,19 @@ mod volume;
 
 use self::join::JOIN_COMMAND;
 use self::leave::LEAVE_COMMAND;
+use self::lyrics::LYRICS_COMMAND;
 use self::next::NEXT_COMMAND;
 use self::pause::PAUSE_COMMAND;
 use self::play::PLAY_COMMAND;
 use self::queue::QUEUE_COMMAND;
 use self::resume::RESUME_COMMAND;
 use self::seek::SEEK_COMMAND;
+use self::song::SONG_COMMAND;
 use self::stop::STOP_COMMAND;
-use self::lyrics::LYRICS_COMMAND;
+use self::volume::VOLUME_COMMAND;
 
 #[group]
-#[commands(join, leave, play, next, queue, stop, pause, resume, seek, lyrics)]
+#[commands(
+    join, leave, play, next, queue, stop, pause, resume, seek, lyrics, volume, song
+)]
 struct Audio;

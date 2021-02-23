@@ -33,13 +33,5 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         handler.deafen(true).await?;
     }
 
-    if let Some(bitrate) = guild
-        .channels(ctx)
-        .await?
-        .get(&channel).and_then(|channel| channel.bitrate)
-    {
-        handler.set_bitrate(Bitrate::BitsPerSecond(i32::try_from(bitrate)?));
-    }
-
     Ok(())
 }

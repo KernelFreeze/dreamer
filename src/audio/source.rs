@@ -1,4 +1,4 @@
-use std::io::{BufRead, BufReader, Cursor, Read};
+use std::io::{BufRead, BufReader, Read};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
@@ -6,86 +6,54 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use serenity::async_trait;
 use songbird::input::error::{Error, Result};
-use songbird::input::{Codec, Container, Input, Metadata, Reader};
+use songbird::input::restartable::Restart;
+use songbird::input::{Codec, Container, Input, Metadata, Reader, Restartable};
 use tokio::process::Command as TokioCommand;
 use tokio::task;
-use tracing::info;
-
-use super::restartable::Restart;
+use tracing::debug;
 
 const YOUTUBE_DL_COMMAND: &str = "youtube-dl";
 
-#[derive(Debug, Clone)]
-pub enum YouTubeType {
-    Uri(VideoMetadata),
-    Search(String),
-}
-
-pub struct YouTubeRestarter {
-    uri: YouTubeType,
-}
-
-impl YouTubeRestarter {
-    pub fn new(uri: YouTubeType) -> Self {
-        YouTubeRestarter { uri }
-    }
-
-    async fn convert_url(&mut self) -> Result<String> {
-        let result = match &self.uri {
-            YouTubeType::Uri(metadata) => metadata.url.clone(),
-            YouTubeType::Search(query) => {
-                let search = youtube_music::search(&query)
-                    .await
-                    .or(Err(Error::Metadata))?;
-                let result = search.get(0).ok_or(Error::Metadata)?;
-
-                self.uri = YouTubeType::Uri(VideoMetadata {
-                    url: result.video_id.clone(),
-                    title: Some(result.title.clone()),
-                    search_query: Some(query.clone()),
-                    ..VideoMetadata::default()
-                });
-                result.video_id.clone()
-            },
-        };
-        Ok(result)
-    }
-
-    fn title(&self) -> Option<String> {
-        match &self.uri {
-            YouTubeType::Uri(meta) => meta.title.clone(),
-            YouTubeType::Search(title) => Some(title.clone()),
-        }
-    }
-}
-
-#[async_trait]
-impl Restart for YouTubeRestarter {
-    async fn call_restart(&mut self, time: Option<Duration>) -> Result<Input> {
-        let uri = self.convert_url().await?;
-
-        if let Some(time) = time {
-            let ts = format!("{}.{}", time.as_secs(), time.subsec_millis());
-
-            ytdl(&uri, &["-ss", &ts]).await
-        } else {
-            ytdl(&uri, &[]).await
+impl MediaResource {
+    pub fn with_query(query: String) -> Self {
+        MediaResource {
+            search_query: Some(query),
+            ..MediaResource::default()
         }
     }
 
-    async fn lazy_init(&mut self) -> Result<(String, Codec, Container)> {
-        Ok((
-            self.title().unwrap_or(String::from("Unknown")),
-            Codec::FloatPcm,
-            Container::Raw,
-        ))
+    pub fn title(&self) -> Option<String> {
+        if let Some(title) = &self.title {
+            return Some(title.clone());
+        }
+        if let Some(search) = &self.search_query {
+            return Some(search.clone());
+        }
+        self.url.clone()
+    }
+
+    pub async fn url(&mut self) -> Option<String> {
+        if let Some(url) = &self.url {
+            return Some(url.clone());
+        }
+
+        if let Some(search) = &self.search_query {
+            let results = youtube_music::search(search).await.ok()?;
+            let result = results.get(0)?;
+
+            self.url = Some(result.video_id.clone());
+            self.title = Some(result.title.clone());
+
+            return self.url.clone();
+        }
+        None
     }
 }
 
 #[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct VideoMetadata {
+pub struct MediaResource {
     pub id: Option<String>,
-    pub url: String,
+    pub url: Option<String>,
     pub title: Option<String>,
     pub description: Option<String>,
     pub duration: Option<f64>,
@@ -94,7 +62,7 @@ pub struct VideoMetadata {
     pub search_query: Option<String>,
 }
 
-pub async fn ytdl_metadata(uri: &str) -> Result<Vec<VideoMetadata>> {
+pub async fn ytdl_metadata(uri: &str) -> Result<Vec<MediaResource>> {
     // Most of these flags are likely unused, but we want identical search
     // and/or selection as the above functions.
     let ytdl_args = [
@@ -118,14 +86,21 @@ pub async fn ytdl_metadata(uri: &str) -> Result<Vec<VideoMetadata>> {
         .output()
         .await?;
 
-    let out = Cursor::new(youtube_dl_output.stderr)
+    let out = youtube_dl_output
+        .stderr
         .lines()
-        .filter_map(std::result::Result::ok)
+        .filter_map(|line| line.ok())
         .map(|line| serde_json::from_str(&line))
         .filter_map(std::result::Result::ok)
         .collect();
 
     Ok(out)
+}
+
+pub async fn download<P: AsRef<str> + Send + Clone + Sync + 'static>(
+    uri: P, lazy: bool,
+) -> Result<Restartable> {
+    Restartable::new(YtdlRestarter { uri }, lazy).await
 }
 
 async fn ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
@@ -200,7 +175,7 @@ async fn ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
 
     let metadata = Metadata::from_ytdl_output(value?);
 
-    info!("Playing song {:?}", metadata);
+    debug!("Playing song {:?}", metadata);
     Ok(Input::new(
         true,
         Reader::from(vec![youtube_dl, ffmpeg]),
@@ -208,4 +183,72 @@ async fn ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
         Container::Raw,
         Some(metadata),
     ))
+}
+
+async fn _ytdl_metadata(uri: &str) -> Result<Metadata> {
+    // Most of these flags are likely unused, but we want identical search
+    // and/or selection as the above functions.
+    let ytdl_args = [
+        "-j",
+        "-f",
+        "webm[abr>0]/bestaudio/best",
+        "-R",
+        "infinite",
+        "--no-playlist",
+        "--ignore-config",
+        "--no-warnings",
+        uri,
+        "-o",
+        "-",
+    ];
+
+    let youtube_dl_output = TokioCommand::new(YOUTUBE_DL_COMMAND)
+        .args(&ytdl_args)
+        .stdin(Stdio::null())
+        .output()
+        .await?;
+
+    let o_vec = youtube_dl_output.stderr;
+
+    let end = (&o_vec)
+        .iter()
+        .position(|el| *el == 0xA)
+        .unwrap_or_else(|| o_vec.len());
+
+    let value = serde_json::from_slice(&o_vec[..end]).map_err(|err| Error::Json {
+        error: err,
+        parsed_text: std::str::from_utf8(&o_vec).unwrap_or_default().to_string(),
+    })?;
+
+    let metadata = Metadata::from_ytdl_output(value);
+
+    Ok(metadata)
+}
+
+struct YtdlRestarter<P>
+where
+    P: AsRef<str> + Send + Sync, {
+    uri: P,
+}
+
+#[async_trait]
+impl<P> Restart for YtdlRestarter<P>
+where
+    P: AsRef<str> + Send + Sync,
+{
+    async fn call_restart(&mut self, time: Option<Duration>) -> Result<Input> {
+        if let Some(time) = time {
+            let ts = format!("{}.{}", time.as_secs(), time.subsec_millis());
+
+            ytdl(self.uri.as_ref(), &["-ss", &ts]).await
+        } else {
+            ytdl(self.uri.as_ref(), &[]).await
+        }
+    }
+
+    async fn lazy_init(&mut self) -> Result<(Option<Metadata>, Codec, Container)> {
+        _ytdl_metadata(self.uri.as_ref())
+            .await
+            .map(|m| (Some(m), Codec::FloatPcm, Container::Raw))
+    }
 }

@@ -5,10 +5,16 @@ authors = ["KernelFreeze <kernelfreeze@outlook.com>"]
 edition = "2018"
 
 [workspace]
-members = ["crates/youtube-music", "crates/wither", "crates/wither_derive", "crates/rspotify", "crates/lyrics"]
+members = [
+    "crates/youtube-music",
+    "crates/wither",
+    "crates/wither_derive",
+    "crates/rspotify",
+    "crates/lyrics",
+]
 
 [dependencies]
-songbird = { git = "https://github.com/KernelFreeze/songbird", features = ["builtin-queue"] }
+songbird = { git = "https://github.com/KernelFreeze/songbird" }
 dotenv = "0.15.0"
 wither = { path = "crates/wither" }
 serde = "1.0.123"
@@ -24,6 +30,10 @@ regex = "1.4.3"
 flume = "0.10.2"
 byteorder = "1.4.2"
 humantime = "2.1.0"
+thiserror = "1.0.24"
+smallvec = "1.6.1"
+progressing = { git = "https://github.com/KernelFreeze/progressing" }
+hhmmss = "0.1"
 
 [dependencies.serenity]
 version = "0.10.2"

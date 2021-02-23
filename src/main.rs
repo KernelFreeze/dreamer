@@ -9,20 +9,20 @@
 use std::collections::HashSet;
 use std::env;
 use std::error::Error;
-use std::fs::File;
 use std::sync::Arc;
 
 use dotenv::dotenv;
-use tracing::warn;
 use serenity::client::bridge::gateway::ShardManager;
 use serenity::client::Client;
 use serenity::framework::StandardFramework;
 use serenity::http::Http;
 use serenity::prelude::*;
 use songbird::SerenityInit;
+use tracing::warn;
 
 mod audio;
 mod commands;
+mod constants;
 mod database;
 mod events;
 mod hooks;

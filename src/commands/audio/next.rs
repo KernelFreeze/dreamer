@@ -3,6 +3,8 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
 
+use crate::audio::queue;
+
 #[command]
 #[only_in(guilds)]
 #[aliases("skip")]
@@ -10,19 +12,15 @@ async fn next(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;
     let guild_id = guild.id;
 
-    let manager = songbird::get(ctx)
-        .await
-        .ok_or("Voice client was not initialized")?
-        .clone();
+    let mut queues = queue::get_queues_mut().await;
+    let queue = queue::get(&mut queues, guild_id);
+    queue.next().await?;
 
-    let handler_lock = manager.get(guild_id).ok_or("Not in a voice channel")?;
-    let handler = handler_lock.lock().await;
-    let queue = handler.queue();
-    queue.skip()?;
-
-    let remaining = queue.len().max(1) - 1;
-    msg.reply(ctx, format!("Song skipped: {} in queue.", remaining))
-        .await?;
+    msg.reply(
+        ctx,
+        format!("Song skipped: {} in queue.", queue.remaining().len()),
+    )
+    .await?;
 
     Ok(())
 }
