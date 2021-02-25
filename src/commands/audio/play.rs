@@ -12,28 +12,30 @@ use crate::audio::source::{ytdl_metadata, MediaResource};
 use crate::constants::MUSIC_ICON;
 use crate::spotify;
 
-async fn get_videos(query: &str) -> Vec<MediaResource> {
+async fn get_videos<S>(query: S) -> Vec<MediaResource>
+where
+    S: AsRef<str>, {
     static RE: SyncLazy<Regex> = SyncLazy::new(|| {
         let regex = r"https?://(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)";
         Regex::new(regex).expect("Failed to compile URL regex")
     });
 
     // Check if is a Spotify uri
-    if spotify::is_spotify_url(query) {
+    if spotify::is_spotify_url(query.as_ref()) {
         return spotify::get_titles(query)
             .await
             .unwrap_or_else(|_| Vec::new())
             .iter()
-            .map(|track| MediaResource::with_query(track.into()))
+            .map(|track| MediaResource::with_query(track))
             .collect();
     }
 
     // Check if is a normal uri
-    if RE.is_match(query) {
+    if RE.is_match(query.as_ref()) {
         return ytdl_metadata(query).await.unwrap_or_else(|_| Vec::new());
     }
 
-    vec![MediaResource::with_query(query.into())]
+    vec![MediaResource::with_query(query)]
 }
 
 #[command]

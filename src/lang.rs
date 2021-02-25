@@ -69,28 +69,36 @@ impl Display for Language {
 }
 
 impl Language {
-    pub fn get_default(key: &str) -> Result<&'static str, TranslationError> {
-        Language::default().get_option(key)
+    pub fn get_default<S>(key: S) -> Result<&'static str, TranslationError>
+    where
+        S: AsRef<str>, {
+        Language::default().get_option::<S>(key)
     }
 
-    pub fn get_option(self, key: &str) -> Result<&'static str, TranslationError> {
+    pub fn get_option<S>(self, key: S) -> Result<&'static str, TranslationError>
+    where
+        S: AsRef<str>, {
         let out = TRANSLATIONS
             .get(&self)
             .ok_or(TranslationError::LangNotInitialized(self))?
-            .get(key)
-            .ok_or(TranslationError::StringNotFound(self, key.into()))?;
+            .get(key.as_ref())
+            .ok_or(TranslationError::StringNotFound(self, String::from(key.as_ref())))?;
         Ok(&out[..])
     }
 
-    pub fn get(self, key: &str) -> Result<&'static str, TranslationError> {
-        let res = self.get_option(key);
+    pub fn get<S>(self, key: S) -> Result<&'static str, TranslationError>
+    where
+        S: AsRef<str>, {
+        let res = self.get_option(key.as_ref());
         if res.is_err() {
             return Language::get_default(key);
         }
         res
     }
 
-    pub fn translate(self, key: &str, data: Value) -> Result<String, TranslationError> {
+    pub fn translate<S>(self, key: S, data: Value) -> Result<String, TranslationError>
+    where
+        S: AsRef<str>, {
         let vars: HashMap<String, String> = HashMap::<String, Value>::deserialize(data)?
             .iter()
             .map(|(k, v)| {

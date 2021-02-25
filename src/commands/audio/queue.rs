@@ -10,7 +10,9 @@ use crate::database::get_language;
 use crate::paginator::send_pages;
 
 #[command]
+#[aliases("q")]
 #[only_in(guilds)]
+#[description = "Get the music queue and the current playing song"]
 async fn queue(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild = msg.guild(ctx).await.ok_or("Failed to fetch guild")?;
     let guild_id = guild.id;

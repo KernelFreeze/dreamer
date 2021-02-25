@@ -92,6 +92,13 @@ impl MediaQueue {
         Ok(())
     }
 
+    pub fn shuffle(&mut self) {
+        use rand::thread_rng;
+        use rand::seq::SliceRandom;
+
+        self.remaining_mut().shuffle(&mut thread_rng());
+    }
+
     pub async fn next(&mut self) -> Result<(), MediaQueueError> {
         self.inner
             .get(self.curr + 1)
@@ -142,7 +149,14 @@ impl MediaQueue {
     }
 
     pub fn remaining(&self) -> &[MediaResource] {
-        &self.inner[self.curr.min(self.inner.len())..]
+        let next = self.curr + 1;
+        &self.inner[next.min(self.inner.len())..]
+    }
+
+    pub fn remaining_mut(&mut self) -> &mut [MediaResource] {
+        let len = self.inner.len();
+        let next = self.curr + 1;
+        &mut self.inner[next.min(len)..]
     }
 
     pub fn is_empty(&self) -> bool {

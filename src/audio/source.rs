@@ -15,9 +15,9 @@ use tracing::debug;
 const YOUTUBE_DL_COMMAND: &str = "youtube-dl";
 
 impl MediaResource {
-    pub fn with_query(query: String) -> Self {
+    pub fn with_query<S: AsRef<str>>(query: S) -> Self {
         MediaResource {
-            search_query: Some(query),
+            search_query: Some(String::from(query.as_ref())),
             ..MediaResource::default()
         }
     }
@@ -62,7 +62,9 @@ pub struct MediaResource {
     pub search_query: Option<String>,
 }
 
-pub async fn ytdl_metadata(uri: &str) -> Result<Vec<MediaResource>> {
+pub async fn ytdl_metadata<S>(uri: S) -> Result<Vec<MediaResource>>
+where
+    S: AsRef<str>, {
     // Most of these flags are likely unused, but we want identical search
     // and/or selection as the above functions.
     let ytdl_args = [
@@ -75,7 +77,7 @@ pub async fn ytdl_metadata(uri: &str) -> Result<Vec<MediaResource>> {
         "--ignore-config",
         "--no-warnings",
         "--flat-playlist",
-        uri,
+        uri.as_ref(),
         "-o",
         "-",
     ];

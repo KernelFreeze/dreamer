@@ -13,11 +13,15 @@ static SPOTIFY_URL: SyncLazy<Regex> = SyncLazy::new(|| {
 
 const PARSE_ERR: &str = "Failed to parse Spotify URI";
 
-pub fn is_spotify_url(url: &str) -> bool {
-    SPOTIFY_URL.is_match(url)
+pub fn is_spotify_url<S>(url: S) -> bool
+where
+    S: AsRef<str>, {
+    SPOTIFY_URL.is_match(url.as_ref())
 }
 
-pub async fn get_titles(query: &str) -> Result<Vec<String>, Box<dyn Error>> {
+pub async fn get_titles<S>(query: S) -> Result<Vec<String>, Box<dyn Error>>
+where
+    S: AsRef<str>, {
     static SPOTIFY: SyncLazy<RwLock<Spotify>> = SyncLazy::new(|| {
         let creds = CredentialsBuilder::from_env()
             .build()
@@ -38,7 +42,7 @@ pub async fn get_titles(query: &str) -> Result<Vec<String>, Box<dyn Error>> {
 
     let client = SPOTIFY.read().await;
 
-    let captures = SPOTIFY_URL.captures(query).ok_or(PARSE_ERR)?;
+    let captures = SPOTIFY_URL.captures(query.as_ref()).ok_or(PARSE_ERR)?;
     let id = captures.get(2).ok_or(PARSE_ERR)?.as_str();
     let result = match captures.get(1).ok_or(PARSE_ERR)?.as_str() {
         "album" => {

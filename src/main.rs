@@ -29,6 +29,7 @@ mod hooks;
 mod lang;
 mod paginator;
 mod spotify;
+mod utils;
 
 // A container type is created for inserting into the Client's `data`, which
 // allows for data to be accessible across all events and framework commands, or

@@ -2,12 +2,10 @@
 - Autojoin on play music
 - Show error when fails to play
 - Prevent rejoin
-- Send current playing message
+- Send message on queue end
 - Effects
 - Fast Forward/Rewind
-- Lyrics
-- Volume
 - Radios (Lofi, Kernel...)
 - Configurable play permissions (only when connected to channel?)
 - Translation settings
-- Google translate
+- Queue show current

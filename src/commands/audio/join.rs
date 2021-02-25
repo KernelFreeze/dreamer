@@ -1,10 +1,9 @@
-use std::convert::TryFrom;
-
 use serenity::client::Context;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::CommandResult;
 use serenity::model::channel::Message;
-use songbird::Bitrate;
+
+use crate::utils::send_info;
 
 #[command]
 #[aliases("j")]
@@ -32,6 +31,8 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     if !handler.is_deaf() {
         handler.deafen(true).await?;
     }
+
+    send_info("Voice channel update", "Joined voice channel", msg, ctx).await?;
 
     Ok(())
 }
