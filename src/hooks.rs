@@ -1,12 +1,13 @@
-use tracing::error;
 use serde_json::json;
 use serenity::framework::standard::macros::hook;
 use serenity::framework::standard::CommandError;
 use serenity::model::prelude::*;
 use serenity::prelude::*;
 use serenity::utils::Colour;
+use tracing::error;
 
-use crate::{constants::ERROR_MARK, database::get_language};
+use crate::constants::ERROR_MARK;
+use crate::database::get_language;
 
 #[hook]
 pub async fn after_hook(
@@ -31,6 +32,15 @@ pub async fn after_hook(
                 m.reference_message(msg);
                 m.allowed_mentions(|f| f.replied_user(false));
                 m.embed(|e| {
+                    e.author(|a| {
+                        a.name(&msg.author.name);
+                        a.icon_url(
+                            msg.author
+                                .avatar_url()
+                                .unwrap_or_else(|| msg.author.default_avatar_url()),
+                        );
+                        a
+                    });
                     e.color(Colour::DARK_RED);
                     e.thumbnail(ERROR_MARK);
                     e.title(title);

@@ -9,11 +9,10 @@ use serenity::model::id::{ChannelId, GuildId};
 use serenity::prelude::{Mutex, RwLock};
 use serenity::utils::Colour;
 use smallvec::SmallVec;
-use songbird::{input::{Metadata, cached::Compressed}, tracks::TrackState};
 use songbird::input::error::Error as InputError;
-use songbird::input::Restartable;
-use songbird::tracks::{TrackError, TrackHandle};
-use songbird::{Bitrate, Call, Event, EventContext, EventHandler as VoiceEventHandler, TrackEvent};
+use songbird::input::Metadata;
+use songbird::tracks::{TrackError, TrackHandle, TrackState};
+use songbird::{Call, Event, EventContext, EventHandler as VoiceEventHandler, TrackEvent};
 use thiserror::Error;
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
 use tracing::debug;
@@ -78,6 +77,10 @@ impl MediaQueue {
 
     pub fn current_mut(&mut self) -> Option<&mut MediaResource> {
         self.inner.get_mut(self.curr)
+    }
+
+    pub fn get(&self) -> &SmallVec<[MediaResource; 5]> {
+        &self.inner
     }
 
     pub async fn back(&mut self) -> Result<(), MediaQueueError> {
@@ -151,12 +154,21 @@ impl MediaQueue {
     }
 
     pub async fn track_info(&self) -> Result<Box<TrackState>, MediaQueueError> {
-        let state = self.curr_handle.as_ref().ok_or(MediaQueueError::NotPlaying)?.get_info().await?;
+        let state = self
+            .curr_handle
+            .as_ref()
+            .ok_or(MediaQueueError::NotPlaying)?
+            .get_info()
+            .await?;
         Ok(state)
     }
 
     pub async fn metadata(&self) -> Result<&Metadata, MediaQueueError> {
-        let state = self.curr_handle.as_ref().ok_or(MediaQueueError::NotPlaying)?.metadata();
+        let state = self
+            .curr_handle
+            .as_ref()
+            .ok_or(MediaQueueError::NotPlaying)?
+            .metadata();
         Ok(state)
     }
 
@@ -176,12 +188,11 @@ impl MediaQueue {
         &mut self, handler_lock: Arc<Mutex<Call>>, channel: ChannelId, guild_id: GuildId,
         http: Arc<Http>,
     ) -> Result<(), MediaQueueError> {
-        debug!("Trying to start media player");
-
         if self.is_playing() {
             debug!("Media player already initialized");
             return Ok(());
         }
+        debug!("Creating new media player");
         self.handler_lock = Some(handler_lock.clone());
         self.http = Some(http.clone());
         self.channel = Some(channel);

@@ -14,7 +14,7 @@ async fn volume(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let volume = args.single::<usize>()?;
 
     if !(0..=200).contains(&volume) {
-        Err("Volume must be in range from 0 to 100")?;
+        Err("Volume must be in range from 0 to 200")?;
     }
 
     let mut queues = queue::get_queues_mut().await;

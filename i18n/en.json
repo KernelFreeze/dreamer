@@ -1,4 +1,8 @@
 {
+    "queue.title": "Queue for {guild}",
+    "queue.empty": "Not currently playing. Queue is empty.",
+    "queue.songs": "There are {total} songs in the queue",
+    "page.number": "Page {number} of {total}",
     "command.error.internal": "Failed to process this command. {error}",
     "command.error.title": "Error"
 }

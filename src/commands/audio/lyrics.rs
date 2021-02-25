@@ -2,9 +2,10 @@ use serenity::client::Context;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandError, CommandResult};
 use serenity::model::channel::Message;
-use serenity::utils::Colour;
 
-use crate::{audio::queue, constants::LYRICS_ICON};
+use crate::audio::queue;
+use crate::constants::{self};
+use crate::paginator::send_pages;
 
 async fn get_current_song(ctx: &Context, msg: &Message) -> Result<String, CommandError> {
     let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;
@@ -28,30 +29,8 @@ async fn lyrics(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     };
     let name = name.ok_or("You must provide a song name to search!")?;
     let lyrics = lyrics::search(name).await.map_err(|_| "Song not found!")?;
+    let lines: Vec<&str> = lyrics.lyrics.lines().collect();
+    let text = lines.chunks(30).map(|lines| lines.join("\n")).collect();
 
-    msg.channel_id
-        .send_message(&ctx.http, |m| {
-            m.reference_message(msg);
-            m.allowed_mentions(|f| f.replied_user(false));
-            m.embed(|e| {
-                e.author(|a| {
-                    a.name(&msg.author.name);
-                    a.icon_url(
-                        msg.author
-                            .avatar_url()
-                            .unwrap_or_else(|| msg.author.default_avatar_url()),
-                    );
-                    a
-                });
-
-                e.thumbnail(LYRICS_ICON);
-                e.color(Colour::DARK_PURPLE);
-                e.title(lyrics.title);
-                e.description(lyrics.lyrics);
-                e
-            });
-            m
-        })
-        .await?;
-    Ok(())
+    send_pages(lyrics.title, text, constants::LYRICS_ICON.into(), ctx, msg).await
 }

@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::error::Error;
 use std::fmt::Display;
 use std::fs::File;
 use std::io::BufReader;
@@ -8,6 +7,25 @@ use std::lazy::SyncLazy;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use strfmt::strfmt;
+use thiserror::Error;
+
+#[derive(Debug, Error)]
+pub enum TranslationError {
+    #[error("Language was not initialized {0}")]
+    LangNotInitialized(Language),
+
+    #[error("String '{1}' not found in {0}")]
+    StringNotFound(Language, String),
+
+    #[error("Failed to decode translation")]
+    Json(#[from] serde_json::Error),
+
+    #[error("Failed to format translation")]
+    Format(#[from] strfmt::FmtError),
+
+    #[error("IO error")]
+    Io(#[from] std::io::Error),
+}
 
 static TRANSLATIONS: SyncLazy<HashMap<Language, HashMap<String, String>>> = SyncLazy::new(|| {
     let mut v = HashMap::new();
@@ -51,23 +69,20 @@ impl Display for Language {
 }
 
 impl Language {
-    pub fn get_default(key: &str) -> Result<&'static str, String> {
+    pub fn get_default(key: &str) -> Result<&'static str, TranslationError> {
         Language::default().get_option(key)
     }
 
-    pub fn get_option(self, key: &str) -> Result<&'static str, String> {
-        TRANSLATIONS
+    pub fn get_option(self, key: &str) -> Result<&'static str, TranslationError> {
+        let out = TRANSLATIONS
             .get(&self)
-            .ok_or(format!("{:?} language was not initialized", self))
-            .map(|v| {
-                v.get(key)
-                    .ok_or(format!("{} was not found in {}", key, self))
-            })
-            .flatten()
-            .map(|s| &s[..])
+            .ok_or(TranslationError::LangNotInitialized(self))?
+            .get(key)
+            .ok_or(TranslationError::StringNotFound(self, key.into()))?;
+        Ok(&out[..])
     }
 
-    pub fn get(self, key: &str) -> Result<&'static str, String> {
+    pub fn get(self, key: &str) -> Result<&'static str, TranslationError> {
         let res = self.get_option(key);
         if res.is_err() {
             return Language::get_default(key);
@@ -75,14 +90,27 @@ impl Language {
         res
     }
 
-    pub fn translate(self, key: &str, data: Value) -> Result<String, Box<dyn Error>> {
-        let vars: HashMap<String, String> = HashMap::deserialize(data)?;
+    pub fn translate(self, key: &str, data: Value) -> Result<String, TranslationError> {
+        let vars: HashMap<String, String> = HashMap::<String, Value>::deserialize(data)?
+            .iter()
+            .map(|(k, v)| {
+                let v = match v {
+                    Value::Number(ref v) => format!("{}", v),
+                    Value::String(ref v) => v.clone(),
+                    Value::Null => String::from("Null"),
+                    Value::Bool(v) => format!("{}", v),
+                    Value::Array(v) => format!("{:?}", v),
+                    Value::Object(v) => format!("{:?}", v),
+                };
+                (k.clone(), v)
+            })
+            .collect();
         let translated = strfmt(self.get(key)?, &vars)?;
         Ok(translated)
     }
 }
 
-fn load_language(lang: Language) -> Result<HashMap<String, String>, Box<dyn Error>> {
+fn load_language(lang: Language) -> Result<HashMap<String, String>, TranslationError> {
     let file = File::open(format!("i18n/{}.json", lang))?;
     let reader = BufReader::new(file);
 

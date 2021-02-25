@@ -1,4 +1,5 @@
 {
+    "page.number": "Página {number} de {total}",
     "command.error.internal": "No se pudo procesar este comando. {error}",
     "command.error.title": "Error"
 }

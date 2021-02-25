@@ -27,6 +27,7 @@ mod database;
 mod events;
 mod hooks;
 mod lang;
+mod paginator;
 mod spotify;
 
 // A container type is created for inserting into the Client's `data`, which

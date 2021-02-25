@@ -10,3 +10,4 @@
 - Radios (Lofi, Kernel...)
 - Configurable play permissions (only when connected to channel?)
 - Translation settings
+- Google translate
