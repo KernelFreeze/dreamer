@@ -82,18 +82,19 @@ impl Language {
             .get(&self)
             .ok_or(TranslationError::LangNotInitialized(self))?
             .get(key.as_ref())
-            .ok_or(TranslationError::StringNotFound(self, String::from(key.as_ref())))?;
+            .ok_or(TranslationError::StringNotFound(
+                self,
+                String::from(key.as_ref()),
+            ))?;
         Ok(&out[..])
     }
 
-    pub fn get<S>(self, key: S) -> Result<&'static str, TranslationError>
+    pub fn get<'a, S>(self, key: S) -> &'a str
     where
-        S: AsRef<str>, {
-        let res = self.get_option(key.as_ref());
-        if res.is_err() {
-            return Language::get_default(key);
-        }
-        res
+        S: Into<&'a str>, {
+        let key = key.into();
+        self.get_option(&key)
+            .unwrap_or_else(|_| Language::get_default(&key).unwrap_or(key))
     }
 
     pub fn translate<S>(self, key: S, data: Value) -> Result<String, TranslationError>
@@ -113,7 +114,7 @@ impl Language {
                 (k.clone(), v)
             })
             .collect();
-        let translated = strfmt(self.get(key)?, &vars)?;
+        let translated = strfmt(&self.get(key.as_ref()), &vars)?;
         Ok(translated)
     }
 }

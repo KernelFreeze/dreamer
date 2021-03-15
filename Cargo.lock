@@ -28,6 +28,12 @@ dependencies = [
 ]
 
 [[package]]
+name = "ahash"
+version = "0.3.8"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e8fd72866655d1904d6b0997d0b07ba561047d070fbe29de039031c641b61217"
+
+[[package]]
 name = "aho-corasick"
 version = "0.7.15"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -449,6 +455,15 @@ dependencies = [
 ]
 
 [[package]]
+name = "cmake"
+version = "0.1.45"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "eb6210b637171dfba4cda12e579ac6dc73f5165ad56133e5d72ef3131f320855"
+dependencies = [
+ "cc",
+]
+
+[[package]]
 name = "command_attr"
 version = "0.3.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -756,6 +771,7 @@ dependencies = [
  "hhmmss",
  "humantime",
  "lyrics",
+ "mimalloc",
  "progressing",
  "rand 0.8.3",
  "regex",
@@ -763,6 +779,7 @@ dependencies = [
  "serde",
  "serde_json",
  "serenity",
+ "simd-json",
  "smallvec",
  "songbird",
  "strfmt",
@@ -864,6 +881,15 @@ dependencies = [
  "crc32fast",
  "libc",
  "miniz_oxide",
+]
+
+[[package]]
+name = "float-cmp"
+version = "0.8.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e1267f4ac4f343772758f7b1bdcbe767c218bbab93bb432acbf5162bbf85a6c4"
+dependencies = [
+ "num-traits 0.2.14",
 ]
 
 [[package]]
@@ -1113,6 +1139,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "halfbrown"
+version = "0.1.11"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "c12499524b5585419ab2f51545a19b842263a373580a83c0eb98a0142a260a10"
+dependencies = [
+ "hashbrown 0.7.2",
+ "serde",
+]
+
+[[package]]
+name = "hashbrown"
+version = "0.7.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "96282e96bfcd3da0d3aa9938bedf1e50df3269b6db08b4876d2da0bb1a0841cf"
+dependencies = [
+ "ahash",
+ "autocfg",
+]
+
+[[package]]
 name = "hashbrown"
 version = "0.9.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1288,7 +1334,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "4fb1fa934250de4de8aef298d81c729a7d33d8c239daa3a7575e6b92bfc7313b"
 dependencies = [
  "autocfg",
- "hashbrown",
+ "hashbrown 0.9.1",
 ]
 
 [[package]]
@@ -1381,6 +1427,15 @@ name = "libc"
 version = "0.2.86"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "b7282d924be3275cec7f6756ff4121987bc6481325397dde6ba3e7802b1a8b1c"
+
+[[package]]
+name = "libmimalloc-sys"
+version = "0.1.20"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "e58f42b6424a0ed536678c65fd97cd64b4344bcf86251e284f7c0ce9eee40e64"
+dependencies = [
+ "cmake",
+]
 
 [[package]]
 name = "linked-hash-map"
@@ -1506,6 +1561,15 @@ name = "memchr"
 version = "2.3.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "0ee1c47aaa256ecabcaea351eae4a9b01ef39ed810004e298d2511ed284b1525"
+
+[[package]]
+name = "mimalloc"
+version = "0.1.24"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "757efec188b3d2088949d912e01ea2fe87164ed6376b6c5d7dd4f3ce1668a93d"
+dependencies = [
+ "libmimalloc-sys",
+]
 
 [[package]]
 name = "mime"
@@ -2552,6 +2616,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "simd-json"
+version = "0.3.25"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "75554426dd9eb201d67cebeb365658da99766d4b6dac7e263c7af7e7084105fd"
+dependencies = [
+ "halfbrown",
+ "serde",
+ "serde_json",
+ "value-trait",
+]
+
+[[package]]
 name = "slab"
 version = "0.4.2"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3397,6 +3473,18 @@ dependencies = [
 ]
 
 [[package]]
+name = "value-trait"
+version = "0.1.23"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "4fd13485b764afe742226ad5a4906e9f7c1ae0029895473fa52855882661e06c"
+dependencies = [
+ "float-cmp",
+ "halfbrown",
+ "itoa",
+ "ryu",
+]
+
+[[package]]
 name = "vcpkg"
 version = "0.2.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -3696,6 +3784,7 @@ version = "0.1.0"
 dependencies = [
  "serde",
  "serde_json",
+ "simd-json",
  "tokio",
 ]
 

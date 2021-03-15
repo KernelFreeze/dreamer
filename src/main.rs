@@ -19,6 +19,7 @@ use serenity::http::Http;
 use serenity::prelude::*;
 use songbird::SerenityInit;
 use tracing::warn;
+use mimalloc::MiMalloc;
 
 mod audio;
 mod commands;
@@ -30,6 +31,9 @@ mod lang;
 mod paginator;
 mod spotify;
 mod utils;
+
+#[global_allocator]
+static GLOBAL: MiMalloc = MiMalloc;
 
 // A container type is created for inserting into the Client's `data`, which
 // allows for data to be accessible across all events and framework commands, or

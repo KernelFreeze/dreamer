@@ -3,6 +3,8 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::CommandResult;
 use serenity::model::channel::Message;
 
+use crate::utils::send_info;
+
 #[command]
 #[aliases("l", "quit", "exit", "part")]
 #[only_in(guilds)]
@@ -19,6 +21,8 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
 
     manager.get(guild_id).ok_or("Not in a voice channel")?;
     manager.remove(guild_id).await?;
+
+    send_info("voice.update", "voice.left", msg, ctx).await?;
 
     Ok(())
 }

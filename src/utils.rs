@@ -3,9 +3,15 @@ use serenity::framework::standard::CommandResult;
 use serenity::model::channel::Message;
 use serenity::utils::Colour;
 
+use crate::database::get_language;
+
 pub async fn send_info<S>(title: S, description: S, msg: &Message, ctx: &Context) -> CommandResult
 where
     S: AsRef<str>, {
+    let lang = get_language(msg.author.id, msg.guild_id).await;
+    let title = lang.get(title.as_ref());
+    let description = lang.get(description.as_ref());
+
     msg.channel_id
         .send_message(&ctx.http, |m| {
             m.reference_message(msg);
@@ -21,8 +27,8 @@ where
                     a
                 });
                 e.color(Colour::DARK_BLUE);
-                e.title(title.as_ref());
-                e.description(description.as_ref());
+                e.title(title);
+                e.description(description);
                 e
             });
             m

@@ -36,6 +36,8 @@ progressing = { git = "https://github.com/KernelFreeze/progressing" }
 hhmmss = "0.1"
 rand = "0.8.3"
 async-recursion = "0.3.2"
+mimalloc = { version = "0.1.24", default-features = false }
+simd-json = "0.3.24"
 
 [dependencies.serenity]
 version = "0.10.2"

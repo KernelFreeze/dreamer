@@ -1,4 +1,10 @@
 {
+    "voice.update": "Actualización del Canal de Voz",
+    "voice.left": "Salí del canal de voz",
+    "voice.joined": "Me uní al canal de voz",
+    "queue.title": "Cola para {guild}",
+    "queue.empty": "No se está reproduciendo nada. La cola está vacía.",
+    "queue.songs": "Hay {total} canciones en la cola",
     "page.number": "Página {number} de {total}",
     "command.error.internal": "No se pudo procesar este comando. {error}",
     "command.error.title": "Error"

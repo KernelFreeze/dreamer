@@ -17,7 +17,7 @@ pub async fn after_hook(
         error!("Error in command '{}': {:?}", cmd_name, why);
 
         let lang = get_language(msg.author.id, msg.guild_id).await;
-        let title = lang.get("command.error.title").unwrap_or("Error");
+        let title = lang.get("command.error.title");
 
         let text = lang
             .translate(

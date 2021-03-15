@@ -92,7 +92,7 @@ where
         .stderr
         .lines()
         .filter_map(|line| line.ok())
-        .map(|line| serde_json::from_str(&line))
+        .map(|mut line| simd_json::serde::from_str(&mut line))
         .filter_map(std::result::Result::ok)
         .collect();
 
@@ -111,13 +111,15 @@ async fn ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
         "-f",
         "webm[abr>0]/bestaudio/best",
         "-R",
-        "10",
+        "infinite",
         "--no-playlist",
         "--ignore-config",
         "--no-warnings",
-        uri,
+        "--skip-unavailable-fragments",
         "-o",
         "-",
+        "--",
+        uri,
     ];
 
     let ffmpeg_args = [
@@ -141,41 +143,30 @@ async fn ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
 
     // This rigmarole is required due to the inner synchronous reading context.
     let mut stderr = youtube_dl.stderr.take().ok_or(Error::Stdout)?;
-    let (returned_stderr, value) = task::spawn_blocking(move || {
-        let out: Result<Value> = {
-            let mut o_vec = vec![];
-            let mut serde_read = BufReader::new(stderr.by_ref());
-            // Newline...
-            if let Ok(len) = serde_read.read_until(0xA, &mut o_vec) {
-                serde_json::from_slice(&o_vec[..len]).map_err(|err| Error::Json {
-                    error: err,
-                    parsed_text: std::str::from_utf8(&o_vec).unwrap_or_default().to_string(),
-                })
-            } else {
-                Result::Err(Error::Metadata)
-            }
-        };
+    let metadata = task::spawn_blocking(move || {
+        let mut buffer = String::new();
+        let mut serde_read = BufReader::new(stderr.by_ref());
 
-        (stderr, out)
+        serde_read
+            .read_line(&mut buffer)
+            .map_err(|_| Error::Metadata)?;
+
+        serde_json::from_str(&buffer).map_err(|_| Error::Metadata)
     })
     .await
     .map_err(|_| Error::Metadata)?;
-
-    youtube_dl.stderr = Some(returned_stderr);
-
-    let taken_stdout = youtube_dl.stdout.take().ok_or(Error::Stdout)?;
 
     let ffmpeg = Command::new("ffmpeg")
         .args(pre_args)
         .arg("-i")
         .arg("-")
         .args(&ffmpeg_args)
-        .stdin(taken_stdout)
+        .stdin(youtube_dl.stdout.take().ok_or(Error::Stdout)?)
         .stderr(Stdio::null())
         .stdout(Stdio::piped())
         .spawn()?;
 
-    let metadata = Metadata::from_ytdl_output(value?);
+    let metadata = Metadata::from_ytdl_output(metadata?);
 
     debug!("Playing song {:?}", metadata);
     Ok(Input::new(
@@ -199,9 +190,10 @@ async fn _ytdl_metadata(uri: &str) -> Result<Metadata> {
         "--no-playlist",
         "--ignore-config",
         "--no-warnings",
-        uri,
         "-o",
         "-",
+        "--",
+        uri,
     ];
 
     let youtube_dl_output = TokioCommand::new(YOUTUBE_DL_COMMAND)
@@ -211,10 +203,9 @@ async fn _ytdl_metadata(uri: &str) -> Result<Metadata> {
         .await?;
 
     let o_vec = youtube_dl_output.stderr;
-
     let end = (&o_vec)
         .iter()
-        .position(|el| *el == 0xA)
+        .position(|el| *el == b'\n')
         .unwrap_or_else(|| o_vec.len());
 
     let value = serde_json::from_slice(&o_vec[..end]).map_err(|err| Error::Json {

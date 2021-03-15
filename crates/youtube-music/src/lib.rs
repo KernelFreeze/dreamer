@@ -39,16 +39,16 @@ pub struct Thumbnail {
     pub height: Option<i64>,
 }
 
-pub async fn search(query: &str) -> Result<Vec<SearchResult>, Box<dyn Error>> {
+pub async fn search<S: AsRef<str>>(query: S) -> Result<Vec<SearchResult>, Box<dyn Error>> {
     let output = Command::new("python3")
         .arg("-c")
         .arg(include_str!("search.py"))
-        .args(query.split(" "))
+        .args(query.as_ref().split(" "))
         .output()
         .await?;
-    let output = String::from_utf8(output.stdout)?;
+    let mut output = String::from_utf8(output.stdout)?;
 
-    let list = serde_json::from_str(&output)?;
+    let list = simd_json::serde::from_str(&mut output)?;
     Ok(list)
 }
 

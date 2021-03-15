@@ -1,4 +1,7 @@
 {
+    "voice.update": "Voice channel update",
+    "voice.left": "Left voice channel",
+    "voice.joined": "Joined voice channel",
     "queue.title": "Queue for {guild}",
     "queue.empty": "Not currently playing. Queue is empty.",
     "queue.songs": "There are {total} songs in the queue",

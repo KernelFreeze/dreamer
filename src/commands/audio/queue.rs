@@ -18,12 +18,12 @@ async fn queue(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild_id = guild.id;
 
     let lang = get_language(msg.author.id, msg.guild_id).await;
-    let empty = lang.get("queue.empty")?;
+    let empty = lang.get("queue.empty");
 
     let queues = queue::get_queues().await;
     let queue: Vec<String> = queues
         .get(&guild_id)
-        .ok_or(empty)?
+        .ok_or(empty.clone())?
         .get()
         .iter()
         .filter_map(|m| m.title())
