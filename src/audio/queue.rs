@@ -219,11 +219,20 @@ impl MediaQueue {
             .await
             .add_global_event(Event::Track(TrackEvent::End), SongEndNotifier { guild_id });
 
-        self.play().await
+        while let Err(_) = self.play().await {
+            self.curr += 1;
+            if let Err(_) = self.inner.get(self.curr + 1).ok_or(MediaQueueError::Empty) {
+                return Ok(());
+            }
+        }
+        Ok(())
     }
 
     async fn play(&mut self) -> Result<(), MediaQueueError> {
-        let http = self.http.clone().ok_or(MediaQueueError::ChannelPlayFailure)?;
+        let http = self
+            .http
+            .clone()
+            .ok_or(MediaQueueError::ChannelPlayFailure)?;
         let channel = self.channel.ok_or(MediaQueueError::ChannelPlayFailure)?;
 
         let (url, title) = {
@@ -253,7 +262,10 @@ impl MediaQueue {
     }
 
     async fn create_player(&mut self, url: String) -> Result<(), MediaQueueError> {
-        let handler_lock = self.handler_lock.clone().ok_or(MediaQueueError::ChannelPlayFailure)?;
+        let handler_lock = self
+            .handler_lock
+            .clone()
+            .ok_or(MediaQueueError::ChannelPlayFailure)?;
         let compressed = source::download(url, true)
             .await
             .map_err(MediaQueueError::Input)?;

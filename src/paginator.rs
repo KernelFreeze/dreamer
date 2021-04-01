@@ -11,8 +11,8 @@ use serenity::utils::Colour;
 use crate::database::get_language;
 
 fn create_embed<'a>(
-    e: &'a mut CreateEmbed, msg: &Message, title: &str, description: &str,
-    thumbnail: &str, footer: &str,
+    e: &'a mut CreateEmbed, msg: &Message, title: &str, description: &str, thumbnail: &str,
+    footer: &str,
 ) -> &'a mut CreateEmbed {
     e.author(|a| {
         a.name(&msg.author.name);

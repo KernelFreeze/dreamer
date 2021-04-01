@@ -5,9 +5,9 @@ use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
 
 use crate::audio::queue;
+use crate::audio::source::MediaResource;
 use crate::constants;
 use crate::database::get_language;
-use crate::audio::source::MediaResource;
 use crate::paginator::send_pages;
 
 #[command]
