@@ -284,19 +284,21 @@ pub struct SongEndNotifier {
 
 #[async_trait]
 impl VoiceEventHandler for SongEndNotifier {
-    async fn act(&self, _ctx: &EventContext<'_>) -> Option<Event> {
-        let mut queues = get_queues_mut().await;
-        let queue = get(&mut queues, self.guild_id);
+    async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
+        if let EventContext::Track(_) = ctx {
+            let mut queues = get_queues_mut().await;
+            let queue = get(&mut queues, self.guild_id);
 
-        if let Err(err) = queue.next().await {
-            match err {
-                MediaQueueError::Empty => {}
-                err => {
-                    tracing::error!("{:?}", err)
+            if let Err(err) = queue.next().await {
+                match err {
+                    MediaQueueError::Empty => {}
+                    err => {
+                        tracing::error!("{:?}", err)
+                    }
                 }
+                queues.remove(&self.guild_id);
+                return Some(Event::Cancel);
             }
-            queues.remove(&self.guild_id);
-            return Some(Event::Cancel);
         }
         None
     }
