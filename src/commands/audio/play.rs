@@ -27,7 +27,7 @@ where
             .await
             .unwrap_or_else(|_| Vec::new())
             .iter()
-            .map(|track| MediaResource::with_query(track))
+            .map(MediaResource::with_query)
             .collect();
     }
 

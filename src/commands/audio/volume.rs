@@ -11,10 +11,10 @@ async fn volume(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;
     let guild_id = guild.id;
 
-    let volume = args.single::<usize>()?;
+    let volume = args.single::<u8>()?;
 
     if !(0..=200).contains(&volume) {
-        Err("Volume must be in range from 0 to 200")?;
+        return Err("Volume must be in range from 0 to 200".into());
     }
 
     let mut queues = queue::get_queues_mut().await;

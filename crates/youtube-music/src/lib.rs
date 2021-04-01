@@ -43,7 +43,7 @@ pub async fn search<S: AsRef<str>>(query: S) -> Result<Vec<SearchResult>, Box<dy
     let output = Command::new("python3")
         .arg("-c")
         .arg(include_str!("search.py"))
-        .args(query.as_ref().split(" "))
+        .args(query.as_ref().split(' '))
         .output()
         .await?;
     let mut output = String::from_utf8(output.stdout)?;

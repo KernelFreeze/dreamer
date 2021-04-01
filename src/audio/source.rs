@@ -92,7 +92,7 @@ where
     let out = youtube_dl_output
         .stderr
         .lines()
-        .filter_map(|line| line.ok())
+        .filter_map(std::result::Result::ok)
         .map(|mut line| simd_json::serde::from_str(&mut line))
         .filter_map(std::result::Result::ok)
         .collect();

@@ -84,7 +84,7 @@ impl Language {
             .get(&self)
             .ok_or(TranslationError::LangNotInitialized(self))?
             .get(key.as_ref())
-            .ok_or(TranslationError::StringNotFound(
+            .ok_or_else(|| TranslationError::StringNotFound(
                 self,
                 String::from(key.as_ref()),
             ))?;

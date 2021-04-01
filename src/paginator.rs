@@ -11,8 +11,8 @@ use serenity::utils::Colour;
 use crate::database::get_language;
 
 fn create_embed<'a>(
-    e: &'a mut CreateEmbed, msg: &Message, title: &String, description: &String,
-    thumbnail: &String, footer: &String,
+    e: &'a mut CreateEmbed, msg: &Message, title: &str, description: &str,
+    thumbnail: &str, footer: &str,
 ) -> &'a mut CreateEmbed {
     e.author(|a| {
         a.name(&msg.author.name);
@@ -67,10 +67,10 @@ async fn _send_page(
     react_msg.delete_reactions(ctx).await?;
 
     if page > 0 {
-        react_msg.react(ctx, '⬅').await?;
+        react_msg.react(ctx, '\u{2b05}').await?;
     }
     if page + 1 < pages.len() {
-        react_msg.react(ctx, '➡').await?;
+        react_msg.react(ctx, '\u{27a1}').await?;
     }
 
     if let Some(reaction) = &react_msg
@@ -82,13 +82,13 @@ async fn _send_page(
         let emoji = &reaction.as_inner_ref().emoji;
 
         match emoji.as_data().as_str() {
-            "⬅" => {
+            "\u{2b05}" => {
                 if page > 0 {
                     _send_page(title, pages, thumbnail, page - 1, ctx, msg, Some(react_msg))
                         .await?;
                 }
             }
-            "➡" => {
+            "\u{27a1}" => {
                 if page + 1 < pages.len() {
                     _send_page(title, pages, thumbnail, page + 1, ctx, msg, Some(react_msg))
                         .await?;

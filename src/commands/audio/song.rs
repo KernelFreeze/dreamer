@@ -30,7 +30,7 @@ async fn song(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let mut progress_bar = Bar::new();
     progress_bar.set_len(35);
     progress_bar.set(start.as_secs() as f64 / end.as_secs() as f64);
-    progress_bar.set_style("[▬⦿▬]");
+    progress_bar.set_style("[\u{25ac}\u{29bf}\u{25ac}]");
 
     msg.channel_id
         .send_message(&ctx.http, |m| {
@@ -48,7 +48,7 @@ async fn song(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
                 });
 
                 e.color(Colour::DARK_PURPLE);
-                e.title(current.title().unwrap_or(String::from("Unknown")));
+                e.title(current.title().unwrap_or_else(|| String::from("Unknown")));
                 e.description(format!(
                     "```\n{} {} {}\n```",
                     start.hhmmss(),

@@ -7,6 +7,7 @@ use serenity::model::channel::Message;
 use crate::audio::queue;
 use crate::constants;
 use crate::database::get_language;
+use crate::audio::source::MediaResource;
 use crate::paginator::send_pages;
 
 #[command]
@@ -23,16 +24,16 @@ async fn queue(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let queues = queue::get_queues().await;
     let queue: Vec<String> = queues
         .get(&guild_id)
-        .ok_or(empty.clone())?
+        .ok_or(empty)?
         .get()
         .iter()
-        .filter_map(|m| m.title())
+        .filter_map(MediaResource::title)
         .enumerate()
         .map(|(index, title)| format!("{}. {}\n", index + 1, title))
         .collect();
 
-    if queue.len() == 0 {
-        Err(empty)?;
+    if queue.is_empty() {
+        return Err(empty.into());
     }
 
     let title = lang.translate("queue.title", json!({"guild": guild.name}))?;

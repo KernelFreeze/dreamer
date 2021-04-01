@@ -226,7 +226,7 @@ impl MediaQueue {
         let (url, title) = {
             let current = self.current_mut().ok_or(MediaQueueError::Empty)?;
             let url = current.url().await.ok_or(MediaQueueError::NoUrl)?;
-            let title = current.title().unwrap_or(String::from("Unknown"));
+            let title = current.title().unwrap_or_else(|| String::from("Unknown"));
 
             (url, title)
         };
@@ -274,7 +274,7 @@ pub async fn get_queues_mut<'a>() -> RwLockWriteGuard<'a, QueuesType> {
     QUEUES.write().await
 }
 
-pub fn get<'a>(queues: &'a mut QueuesType, id: GuildId) -> &'a mut MediaQueue {
+pub fn get(queues: &mut QueuesType, id: GuildId) -> &mut MediaQueue {
     queues.entry(id).or_default()
 }
 

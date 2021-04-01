@@ -16,7 +16,7 @@ async fn get_current_song(ctx: &Context, msg: &Message) -> Result<String, Comman
         .current_mut()
         .ok_or("Failed to fetch current song")?;
     let title = current.title().ok_or("Failed to fetch current song")?;
-    Ok(title.into())
+    Ok(title)
 }
 
 #[command]
