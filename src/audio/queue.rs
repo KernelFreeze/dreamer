@@ -35,6 +35,9 @@ pub enum MediaQueueError {
     #[error("Queue has no playing element")]
     NotPlaying,
 
+    #[error("Failed to start queue play")]
+    FailedToStart,
+
     #[error("Failed to find an url for the requested media")]
     NoUrl,
 
@@ -222,7 +225,7 @@ impl MediaQueue {
         while let Err(_) = self.play().await {
             self.curr += 1;
             if let Err(_) = self.inner.get(self.curr + 1).ok_or(MediaQueueError::Empty) {
-                return Ok(());
+                return Err(MediaQueueError::FailedToStart);
             }
         }
         Ok(())
