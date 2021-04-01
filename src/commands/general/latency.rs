@@ -7,7 +7,7 @@ use serenity::model::channel::Message;
 use crate::ShardManagerContainer;
 
 #[command]
-#[aliases("lag")]
+#[aliases("lag", "ping")]
 #[bucket = "basic"]
 #[description = "Check bot shard latency with the Discord Gateway."]
 async fn latency(ctx: &Context, msg: &Message) -> CommandResult {

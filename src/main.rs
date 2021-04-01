@@ -55,7 +55,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     // Fetch environment variables from .env file
     if let Err(err) = dotenv() {
-        warn!("Failed to parse environment variables file: {:?}", err);
+        panic!("Failed to parse environment variables file: {:?}", err);
     }
 
     // Fetch discord token

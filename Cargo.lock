@@ -699,10 +699,20 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "a2658621297f2cf68762a6f7dc0bb7e1ff2cfd6583daef8ee0fed6f7ec468ec0"
 dependencies = [
  "darling 0.10.2",
- "derive_builder_core",
+ "derive_builder_core 0.9.0",
  "proc-macro2",
  "quote",
  "syn",
+]
+
+[[package]]
+name = "derive_builder"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "78ef25735c9f0d0c547d2794701600c94abf030ecb740fad1673fa64461f3573"
+dependencies = [
+ "derive_builder_core 0.10.0",
+ "derive_builder_macro",
 ]
 
 [[package]]
@@ -714,6 +724,28 @@ dependencies = [
  "darling 0.10.2",
  "proc-macro2",
  "quote",
+ "syn",
+]
+
+[[package]]
+name = "derive_builder_core"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "3150f1e84602847b99d3eeb702487fc364f7d6c94f634e944a68fdbaea09e457"
+dependencies = [
+ "darling 0.12.1",
+ "proc-macro2",
+ "quote",
+ "syn",
+]
+
+[[package]]
+name = "derive_builder_macro"
+version = "0.10.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "5ca1008bddefdc08d1e734aeb27b94f384390af261b4d1a8fb51fe19c577f05c"
+dependencies = [
+ "derive_builder_core 0.10.0",
  "syn",
 ]
 
@@ -775,7 +807,7 @@ dependencies = [
  "progressing",
  "rand 0.8.3",
  "regex",
- "rspotify",
+ "rspotify 0.10.0 (git+https://github.com/ramsayleung/rspotify.git)",
  "serde",
  "serde_json",
  "serenity",
@@ -2235,12 +2267,14 @@ dependencies = [
  "http-body",
  "hyper",
  "hyper-rustls",
+ "hyper-tls",
  "ipnet",
  "js-sys",
  "lazy_static",
  "log 0.4.14",
  "mime",
  "mime_guess",
+ "native-tls",
  "percent-encoding",
  "pin-project-lite",
  "rustls",
@@ -2248,7 +2282,9 @@ dependencies = [
  "serde_json",
  "serde_urlencoded",
  "tokio",
+ "tokio-native-tls",
  "tokio-rustls",
+ "tokio-socks",
  "url",
  "wasm-bindgen",
  "wasm-bindgen-futures",
@@ -2285,11 +2321,31 @@ dependencies = [
 [[package]]
 name = "rspotify"
 version = "0.10.0"
+source = "git+https://github.com/ramsayleung/rspotify.git#7130835af68d1bd2f25e9adec7b0b999ce4016f9"
 dependencies = [
  "async-trait",
  "base64 0.13.0",
  "chrono",
- "derive_builder",
+ "derive_builder 0.10.0",
+ "getrandom 0.2.2",
+ "log 0.4.14",
+ "maybe-async",
+ "reqwest 0.11.1 (registry+https://github.com/rust-lang/crates.io-index)",
+ "serde",
+ "serde_json",
+ "strum",
+ "thiserror",
+ "url",
+]
+
+[[package]]
+name = "rspotify"
+version = "0.10.0"
+dependencies = [
+ "async-trait",
+ "base64 0.13.0",
+ "chrono",
+ "derive_builder 0.9.0",
  "dotenv",
  "futures",
  "getrandom 0.2.2",

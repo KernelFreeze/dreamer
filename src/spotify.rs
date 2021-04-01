@@ -2,7 +2,7 @@ use std::error::Error;
 use std::lazy::SyncLazy;
 
 use regex::Regex;
-use rspotify::client::{Spotify, SpotifyBuilder};
+use rspotify::{client::{Spotify, SpotifyBuilder}, model::{AlbumId, PlaylistId, TrackId}};
 use rspotify::oauth2::CredentialsBuilder;
 use serenity::prelude::RwLock;
 
@@ -46,7 +46,7 @@ where
     let id = captures.get(2).ok_or(PARSE_ERR)?.as_str();
     let result = match captures.get(1).ok_or(PARSE_ERR)?.as_str() {
         "album" => {
-            let tracks = client.album_track(id, None, None).await?;
+            let tracks = client.album_track(AlbumId::from_id(id)?, None, None).await?;
 
             tracks
                 .items
@@ -62,7 +62,7 @@ where
                 .collect()
         },
         "track" => {
-            let track = client.track(id).await?;
+            let track = client.track(TrackId::from_id(id)?).await?;
             let artists: Vec<String> = track
                 .artists
                 .iter()
@@ -71,14 +71,17 @@ where
             vec![format!("{} - {}", artists.join(", "), track.name)]
         },
         "playlist" => {
-            let playlist = client.playlist(id, None, None).await?;
+            let playlist = client.playlist(PlaylistId::from_id(id)?, None, None).await?;
 
             playlist
                 .tracks
                 .items
                 .iter()
                 .filter_map(|playlist_item| {
-                    let track = playlist_item.track.as_ref()?;
+                    let track = match playlist_item.track.as_ref()? {
+                        rspotify::model::PlayableItem::Track(track) => track,
+                        rspotify::model::PlayableItem::Episode(_) => { return None }
+                    };
                     let artists: Vec<String> = track
                         .artists
                         .iter()

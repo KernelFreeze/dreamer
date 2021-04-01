@@ -24,7 +24,7 @@ tracing-subscriber = "0.2"
 serde_json = "1.0.62"
 strfmt = "0.1.6"
 youtube-music = { path = "crates/youtube-music" }
-rspotify = { path = "crates/rspotify" }
+rspotify = { git = "https://github.com/ramsayleung/rspotify.git" }
 lyrics = { path = "crates/lyrics" }
 regex = "1.4.3"
 flume = "0.10.2"
