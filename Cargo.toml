@@ -9,7 +9,6 @@ members = [
     "crates/youtube-music",
     "crates/wither",
     "crates/wither_derive",
-    "crates/rspotify",
     "crates/lyrics",
 ]
 
