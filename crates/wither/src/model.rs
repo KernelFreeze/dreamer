@@ -36,7 +36,8 @@ const MONGO_DIFF_INDEX_BLACKLIST: [&str; 3] = ["v", "ns", "key"];
 #[async_trait]
 pub trait Model
 where
-    Self: Serialize + DeserializeOwned, {
+    Self: Serialize + DeserializeOwned,
+{
     /// The name of the collection where this model's data is stored.
     const COLLECTION_NAME: &'static str;
 
@@ -99,7 +100,8 @@ where
     async fn find<F, O>(db: &Database, filter: F, options: O) -> Result<ModelCursor<Self>>
     where
         F: Into<Option<Document>> + Send,
-        O: Into<Option<options::FindOptions>> + Send, {
+        O: Into<Option<options::FindOptions>> + Send,
+    {
         Ok(Self::collection(db)
             .find(filter, options)
             .await
@@ -111,7 +113,8 @@ where
     async fn find_one<F, O>(db: &Database, filter: F, options: O) -> Result<Option<Self>>
     where
         F: Into<Option<Document>> + Send,
-        O: Into<Option<options::FindOneOptions>> + Send, {
+        O: Into<Option<options::FindOneOptions>> + Send,
+    {
         Ok(Self::collection(db)
             .find_one(filter, options)
             .await?
@@ -124,7 +127,8 @@ where
         db: &Database, filter: Document, options: O,
     ) -> Result<Option<Self>>
     where
-        O: Into<Option<options::FindOneAndDeleteOptions>> + Send, {
+        O: Into<Option<options::FindOneAndDeleteOptions>> + Send,
+    {
         Ok(Self::collection(db)
             .find_one_and_delete(filter, options)
             .await?
@@ -138,7 +142,8 @@ where
         db: &Database, filter: Document, replacement: Document, options: O,
     ) -> Result<Option<Self>>
     where
-        O: Into<Option<options::FindOneAndReplaceOptions>> + Send, {
+        O: Into<Option<options::FindOneAndReplaceOptions>> + Send,
+    {
         Ok(Self::collection(db)
             .find_one_and_replace(filter, replacement, options)
             .await?
@@ -153,7 +158,8 @@ where
     ) -> Result<Option<Self>>
     where
         U: Into<options::UpdateModifications> + Send,
-        O: Into<Option<options::FindOneAndUpdateOptions>> + Send, {
+        O: Into<Option<options::FindOneAndUpdateOptions>> + Send,
+    {
         Ok(Self::collection(db)
             .find_one_and_update(filter, update, options)
             .await?
@@ -199,11 +205,11 @@ where
                 let new_id = ObjectId::new();
                 self.set_id(new_id.clone());
                 doc! {"_id": new_id}
-            },
+            }
             (None, Some(filter)) => {
                 id_needs_update = true;
                 filter
-            },
+            }
         };
 
         // Save the record by replacing it entirely, or upserting if it doesn't already
@@ -257,7 +263,7 @@ where
             Some(mut doc) => {
                 doc.insert("_id", id);
                 doc
-            },
+            }
             None => doc! {"_id": id},
         };
 
@@ -268,22 +274,22 @@ where
                     Some(mut wc) => {
                         wc.journal = Some(true);
                         Some(wc)
-                    },
+                    }
                     None => {
                         let mut wc = Self::write_concern().unwrap_or_default();
                         wc.journal = Some(true);
                         Some(wc)
-                    },
+                    }
                 };
                 options
-            },
+            }
             None => {
                 let mut options = options::FindOneAndUpdateOptions::default();
                 let mut wc = Self::write_concern().unwrap_or_default();
                 wc.journal = Some(true);
                 options.write_concern = Some(wc);
                 options
-            },
+            }
         };
 
         // Perform a FindOneAndUpdate operation on this model's document by ID.
@@ -311,7 +317,8 @@ where
     /// Wraps the driver's `Collection.delete_many` method.
     async fn delete_many<O>(db: &Database, filter: Document, options: O) -> Result<DeleteResult>
     where
-        O: Into<Option<options::DeleteOptions>> + Send, {
+        O: Into<Option<options::DeleteOptions>> + Send,
+    {
         Ok(Self::collection(db).delete_many(filter, options).await?)
     }
 
@@ -475,12 +482,12 @@ async fn sync_model_indexes<'a>(
                 if options.get_str("name").ok().is_none() {
                     options.insert("name", key.clone());
                 }
-            },
+            }
             // If no options are present, then add a default options doc with the index name.
             None => {
                 let options = doc! { "name": key.clone() };
                 target_model.options = Some(options);
-            },
+            }
         }
         acc.insert(key, target_model);
         acc
@@ -512,7 +519,7 @@ async fn sync_model_indexes<'a>(
             None => {
                 indexes_to_create.insert(aspired_index_name.clone(), aspired_index.clone());
                 continue;
-            },
+            }
         };
 
         // If the options of the two index models do not match, then we need to drop the

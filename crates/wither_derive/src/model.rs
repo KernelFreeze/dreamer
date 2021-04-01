@@ -134,7 +134,7 @@ impl<'a> MetaModel<'a> {
 
     //             /// Get a cloned copy of this instance's ID.
     //             fn id(&self) ->
-    // ::std::option::Option<wither::bson::oid::ObjectId> {                 
+    // ::std::option::Option<wither::bson::oid::ObjectId> {
     // self.id.clone()             }
 
     //             /// Set this instance's ID.
@@ -144,12 +144,12 @@ impl<'a> MetaModel<'a> {
 
     //             /// The model's read concern.
     //             fn read_concern() ->
-    // Option<wither::mongodb::options::ReadConcern> {                 
+    // Option<wither::mongodb::options::ReadConcern> {
     // #read_concern             }
 
     //             /// The model's write concern.
     //             fn write_concern() ->
-    // Option<wither::mongodb::options::WriteConcern> {                 
+    // Option<wither::mongodb::options::WriteConcern> {
     // #write_concern             }
 
     //             /// The model's selection criteria.
@@ -157,7 +157,7 @@ impl<'a> MetaModel<'a> {
     //             /// When deriving a model, a function or an associated function
     // should be specified which             /// should be used to produce the
     // desired value.             fn selection_criteria() ->
-    // Option<wither::mongodb::options::SelectionCriteria> {                 
+    // Option<wither::mongodb::options::SelectionCriteria> {
     // #selection_criteria             }
 
     //             /// All indexes currently on this model.
@@ -434,7 +434,7 @@ impl quote::ToTokens for OptionReadConcern<'_> {
             None => tokens.extend(quote!(None)),
             Some(ReadConcern::Local) => {
                 tokens.extend(quote!(Some(wither::mongodb::options::ReadConcern::local())))
-            },
+            }
             Some(ReadConcern::Majority) => tokens.extend(quote!(Some(
                 wither::mongodb::options::ReadConcern::majority()
             ))),
@@ -484,13 +484,13 @@ impl quote::ToTokens for OptionWriteConcern<'_> {
                     Some(ack) => match ack {
                         Acknowledgment::Nodes(val) => {
                             quote!(Some(wither::mongodb::options::Acknowledgment::Nodes(#val)))
-                        },
+                        }
                         Acknowledgment::Majority => {
                             quote!(Some(wither::mongodb::options::Acknowledgment::Majority))
-                        },
+                        }
                         Acknowledgment::Custom(val) => {
                             quote!(Some(wither::mongodb::options::Acknowledgment::Custom(String::from(#val))))
-                        },
+                        }
                     },
                     None => quote!(None),
                 };
@@ -503,7 +503,7 @@ impl quote::ToTokens for OptionWriteConcern<'_> {
                     None => quote!(None),
                 };
                 tokens.extend(quote!(Some(wither::mongodb::options::WriteConcern::builder().w(#w).w_timeout(#w_timeout).journal(#journal).build())));
-            },
+            }
         }
     }
 }

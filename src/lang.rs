@@ -71,13 +71,15 @@ impl Display for Language {
 impl Language {
     pub fn get_default<S>(key: S) -> Result<&'static str, TranslationError>
     where
-        S: AsRef<str>, {
+        S: AsRef<str>,
+    {
         Language::default().get_option::<S>(key)
     }
 
     pub fn get_option<S>(self, key: S) -> Result<&'static str, TranslationError>
     where
-        S: AsRef<str>, {
+        S: AsRef<str>,
+    {
         let out = TRANSLATIONS
             .get(&self)
             .ok_or(TranslationError::LangNotInitialized(self))?
@@ -91,7 +93,8 @@ impl Language {
 
     pub fn get<'a, S>(self, key: S) -> &'a str
     where
-        S: Into<&'a str>, {
+        S: Into<&'a str>,
+    {
         let key = key.into();
         self.get_option(&key)
             .unwrap_or_else(|_| Language::get_default(&key).unwrap_or(key))
@@ -99,7 +102,8 @@ impl Language {
 
     pub fn translate<S>(self, key: S, data: Value) -> Result<String, TranslationError>
     where
-        S: AsRef<str>, {
+        S: AsRef<str>,
+    {
         let vars: HashMap<String, String> = HashMap::<String, Value>::deserialize(data)?
             .iter()
             .map(|(k, v)| {

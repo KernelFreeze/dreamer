@@ -12,6 +12,7 @@ use std::error::Error;
 use std::sync::Arc;
 
 use dotenv::dotenv;
+use mimalloc::MiMalloc;
 use serenity::client::bridge::gateway::ShardManager;
 use serenity::client::Client;
 use serenity::framework::StandardFramework;
@@ -19,7 +20,6 @@ use serenity::http::Http;
 use serenity::prelude::*;
 use songbird::SerenityInit;
 use tracing::warn;
-use mimalloc::MiMalloc;
 
 mod audio;
 mod commands;
@@ -78,7 +78,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 Ok(bot_id) => (owners, bot_id.id),
                 Err(why) => panic!("Could not access the bot id: {:?}", why),
             }
-        },
+        }
         Err(why) => panic!("Could not access application info: {:?}", why),
     };
 

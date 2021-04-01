@@ -88,13 +88,13 @@ impl MediaQueue {
             .get(self.curr - 1)
             .ok_or(MediaQueueError::NoBack)?;
         self.curr -= 1;
-        self.continue_queue().await?;
+        self.play().await?;
         Ok(())
     }
 
     pub fn shuffle(&mut self) {
-        use rand::thread_rng;
         use rand::seq::SliceRandom;
+        use rand::thread_rng;
 
         self.remaining_mut().shuffle(&mut thread_rng());
     }
@@ -104,7 +104,7 @@ impl MediaQueue {
             .get(self.curr + 1)
             .ok_or(MediaQueueError::Empty)?;
         self.curr += 1;
-        self.continue_queue().await?;
+        self.play().await?;
         Ok(())
     }
 
@@ -210,34 +210,29 @@ impl MediaQueue {
         self.handler_lock = Some(handler_lock.clone());
         self.http = Some(http.clone());
         self.channel = Some(channel);
-        {
-            let mut handler = handler_lock.lock().await;
-            handler.add_global_event(Event::Track(TrackEvent::End), SongEndNotifier { guild_id });
-        }
+
+        handler_lock
+            .lock()
+            .await
+            .add_global_event(Event::Track(TrackEvent::End), SongEndNotifier { guild_id });
 
         self.play().await
     }
 
-    async fn continue_queue(&mut self) -> Result<(), MediaQueueError> {
-        self.play().await?;
-        Ok(())
-    }
-
     async fn play(&mut self) -> Result<(), MediaQueueError> {
-        let handler_lock = self.handler_lock.clone().ok_or(MediaQueueError::NoUrl)?;
         let http = self.http.clone().ok_or(MediaQueueError::NoUrl)?;
         let channel = self.channel.ok_or(MediaQueueError::NoUrl)?;
 
-        let mut handler = handler_lock.lock().await;
+        let (url, title) = {
+            let current = self.current_mut().ok_or(MediaQueueError::Empty)?;
+            let url = current.url().await.ok_or(MediaQueueError::NoUrl)?;
+            let title = current.title().unwrap_or(String::from("Unknown"));
 
-        let current = self.current_mut().ok_or(MediaQueueError::Empty)?;
-        let url = current.url().await.ok_or(MediaQueueError::NoUrl)?;
+            (url, title)
+        };
 
-        let compressed = source::download(url, true)
-            .await
-            .map_err(MediaQueueError::Input)?;
-        let (track, song) = songbird::tracks::create_player(compressed.into());
-        handler.play_only(track);
+        // Create Discord player
+        self.create_player(url).await?;
 
         let _ = channel
             .send_message(&http, |m| {
@@ -245,14 +240,27 @@ impl MediaQueue {
                     e.thumbnail(MUSIC_ICON);
                     e.color(Colour::DARK_PURPLE);
                     e.title("Now Playing");
-                    e.description(current.title().unwrap_or(String::from("Unknown")));
+                    e.description(title);
                     e
                 });
                 m
             })
             .await;
+        Ok(())
+    }
 
-        song.set_volume(self.volume)?;
+    async fn create_player(&mut self, url: String) -> Result<(), MediaQueueError> {
+        let handler_lock = self.handler_lock.clone().ok_or(MediaQueueError::NoUrl)?;
+        let compressed = source::download(url, true)
+            .await
+            .map_err(MediaQueueError::Input)?;
+
+        let (mut track, song) = songbird::tracks::create_player(compressed.into());
+
+        let mut handler = handler_lock.lock().await;
+        track.set_volume(self.volume);
+        handler.play_only(track);
+
         self.curr_handle = Some(song);
         Ok(())
     }
@@ -282,10 +290,10 @@ impl VoiceEventHandler for SongEndNotifier {
 
         if let Err(err) = queue.next().await {
             match err {
-                MediaQueueError::Empty => {},
+                MediaQueueError::Empty => {}
                 err => {
                     tracing::error!("{:?}", err)
-                },
+                }
             }
             queues.remove(&self.guild_id);
             return Some(Event::Cancel);

@@ -11,8 +11,8 @@ use serenity::utils::Colour;
 use crate::database::get_language;
 
 fn create_embed<'a>(
-    e: &'a mut CreateEmbed, msg: &Message, title: &String, description: &String, thumbnail: &String,
-    footer: &String,
+    e: &'a mut CreateEmbed, msg: &Message, title: &String, description: &String,
+    thumbnail: &String, footer: &String,
 ) -> &'a mut CreateEmbed {
     e.author(|a| {
         a.name(&msg.author.name);
@@ -87,14 +87,14 @@ async fn _send_page(
                     _send_page(title, pages, thumbnail, page - 1, ctx, msg, Some(react_msg))
                         .await?;
                 }
-            },
+            }
             "➡" => {
                 if page + 1 < pages.len() {
                     _send_page(title, pages, thumbnail, page + 1, ctx, msg, Some(react_msg))
                         .await?;
                 }
-            },
-            _ => {},
+            }
+            _ => {}
         }
     }
     Ok(())
