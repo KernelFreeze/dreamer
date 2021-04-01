@@ -38,6 +38,9 @@ pub enum MediaQueueError {
     #[error("Failed to find an url for the requested media")]
     NoUrl,
 
+    #[error("Failed to play song in your channel")]
+    ChannelPlayFailure,
+
     #[error("Failed to create source input")]
     Input(InputError),
 
@@ -220,12 +223,12 @@ impl MediaQueue {
     }
 
     async fn play(&mut self) -> Result<(), MediaQueueError> {
-        let http = self.http.clone().ok_or(MediaQueueError::NoUrl)?;
-        let channel = self.channel.ok_or(MediaQueueError::NoUrl)?;
+        let http = self.http.clone().ok_or(MediaQueueError::ChannelPlayFailure)?;
+        let channel = self.channel.ok_or(MediaQueueError::ChannelPlayFailure)?;
 
         let (url, title) = {
             let current = self.current_mut().ok_or(MediaQueueError::Empty)?;
-            let url = current.url().await.ok_or(MediaQueueError::NoUrl)?;
+            let url = current.url_mut().await.ok_or(MediaQueueError::NoUrl)?;
             let title = current.title().unwrap_or_else(|| String::from("Unknown"));
 
             (url, title)
@@ -250,7 +253,7 @@ impl MediaQueue {
     }
 
     async fn create_player(&mut self, url: String) -> Result<(), MediaQueueError> {
-        let handler_lock = self.handler_lock.clone().ok_or(MediaQueueError::NoUrl)?;
+        let handler_lock = self.handler_lock.clone().ok_or(MediaQueueError::ChannelPlayFailure)?;
         let compressed = source::download(url, true)
             .await
             .map_err(MediaQueueError::Input)?;

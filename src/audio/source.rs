@@ -3,7 +3,6 @@ use std::process::{Command, Stdio};
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
-use serde_json::Value;
 use serenity::async_trait;
 use songbird::input::error::{Error, Result};
 use songbird::input::restartable::Restart;
@@ -13,6 +12,18 @@ use tokio::task;
 use tracing::debug;
 
 const YOUTUBE_DL_COMMAND: &str = "youtube-dl";
+
+#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+pub struct MediaResource {
+    pub id: Option<String>,
+    pub url: Option<String>,
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub duration: Option<f64>,
+    pub view_count: Option<u64>,
+    pub uploader: Option<String>,
+    pub search_query: Option<String>,
+}
 
 impl MediaResource {
     pub fn with_query<S: AsRef<str>>(query: S) -> Self {
@@ -32,7 +43,7 @@ impl MediaResource {
         self.url.clone()
     }
 
-    pub async fn url(&mut self) -> Option<String> {
+    pub async fn url_mut(&mut self) -> Option<String> {
         if let Some(url) = &self.url {
             return Some(url.clone());
         }
@@ -48,18 +59,6 @@ impl MediaResource {
         }
         None
     }
-}
-
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
-pub struct MediaResource {
-    pub id: Option<String>,
-    pub url: Option<String>,
-    pub title: Option<String>,
-    pub description: Option<String>,
-    pub duration: Option<f64>,
-    pub view_count: Option<u64>,
-    pub uploader: Option<String>,
-    pub search_query: Option<String>,
 }
 
 pub async fn ytdl_metadata<S>(uri: S) -> Result<Vec<MediaResource>>
