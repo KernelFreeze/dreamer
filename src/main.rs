@@ -82,9 +82,10 @@ async fn main() -> Result<(), Box<dyn Error>> {
         Err(why) => panic!("Could not access application info: {:?}", why),
     };
 
+    let prefix = env::var("BOT_PREFIX")?;
     let framework = StandardFramework::new()
         .configure(|c| {
-            c.prefix(".")
+            c.prefix(&prefix)
                 .no_dm_prefix(true)
                 .case_insensitivity(true)
                 .allow_dm(true)
