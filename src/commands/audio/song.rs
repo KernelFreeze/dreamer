@@ -12,7 +12,7 @@ use crate::audio::queue;
 #[command]
 #[aliases("np", "now_playing", "nowplaying", "current")]
 #[only_in(guilds)]
-async fn song(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
+async fn song(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;
     let guild_id = guild.id;
 

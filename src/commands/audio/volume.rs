@@ -19,7 +19,7 @@ async fn volume(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
 
     let mut queues = queue::get_queues_mut().await;
     let queue = queue::get(&mut queues, guild_id);
-    queue.volume(volume as f32 / 100.0)?;
+    queue.volume(f32::from(volume) / 100.0)?;
     msg.reply(ctx, format!("Set volume to {}%", volume)).await?;
 
     Ok(())

@@ -105,10 +105,10 @@ impl MediaQueue {
 
     pub async fn next(&mut self) -> Result<(), MediaQueueError> {
         debug!("Skipping to next song");
-        self.inner
-            .get(self.curr + 1)
-            .ok_or(MediaQueueError::Empty)?;
         self.curr += 1;
+        if self.is_empty() {
+            return Err(MediaQueueError::Empty);
+        }
         self.play().await?;
         Ok(())
     }
@@ -222,9 +222,9 @@ impl MediaQueue {
             .await
             .add_global_event(Event::Track(TrackEvent::End), SongEndNotifier { guild_id });
 
-        while let Err(_) = self.play().await {
+        while self.play().await.is_err() {
             self.curr += 1;
-            if let Err(_) = self.inner.get(self.curr + 1).ok_or(MediaQueueError::Empty) {
+            if self.is_empty() {
                 return Err(MediaQueueError::FailedToStart);
             }
         }
@@ -283,7 +283,7 @@ impl MediaQueue {
                     e.thumbnail(MUSIC_ICON);
                     e.color(Colour::DARK_PURPLE);
                     e.title("Now Playing");
-            
+
                     if let Some(url) = song.metadata().source_url.as_deref() {
                         e.url(url);
                     }
@@ -301,9 +301,10 @@ impl MediaQueue {
                 m
             })
             .await;
-        Ok(if let Err(err) = msg_err {
+        if let Err(err) = msg_err {
             warn!("Failed to send next song message: {:?}", err);
-        })
+        }
+        Ok(())
     }
 }
 
@@ -319,8 +320,8 @@ pub fn get(queues: &mut QueuesType, id: GuildId) -> &mut MediaQueue {
     queues.entry(id).or_default()
 }
 
-pub fn get_option<'a>(queues: &'a QueuesType, id: &GuildId) -> Option<&'a MediaQueue> {
-    queues.get(id)
+pub fn get_option(queues: &QueuesType, id: GuildId) -> Option<&MediaQueue> {
+    queues.get(&id)
 }
 
 pub struct SongEndNotifier {

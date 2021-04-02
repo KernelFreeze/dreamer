@@ -4,7 +4,6 @@
 #![deny(clippy::unwrap_in_result)]
 #![deny(clippy::unwrap_used)]
 #![deny(unused_must_use)]
-#![warn(clippy::pedantic)]
 
 use std::collections::HashSet;
 use std::env;
@@ -19,7 +18,6 @@ use serenity::framework::StandardFramework;
 use serenity::http::Http;
 use serenity::prelude::*;
 use songbird::SerenityInit;
-use tracing::warn;
 
 mod audio;
 mod commands;

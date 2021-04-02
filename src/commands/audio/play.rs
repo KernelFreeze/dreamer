@@ -59,19 +59,18 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         .clone();
 
     // Join call if not inside one
-    let call = match manager.get(guild_id) {
-        Some(lock) => lock,
-        None => {
-            let voice_channel = guild
-                .voice_states
-                .get(&msg.author.id)
-                .and_then(|voice_state| voice_state.channel_id)
-                .ok_or("Not in a voice channel")?;
+    let call = if let Some(lock) = manager.get(guild_id) {
+        lock
+    } else {
+        let voice_channel = guild
+            .voice_states
+            .get(&msg.author.id)
+            .and_then(|voice_state| voice_state.channel_id)
+            .ok_or("Not in a voice channel")?;
 
-            let (call, result) = manager.join(guild.id, voice_channel).await;
-            result?;
-            call
-        },
+        let (call, result) = manager.join(guild.id, voice_channel).await;
+        result?;
+        call
     };
 
     // Deafen if not deafened

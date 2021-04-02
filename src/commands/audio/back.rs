@@ -17,7 +17,10 @@ async fn back(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     msg.reply(
         ctx,
-        format!("Changed to previous song. {} in queue.", queue.remaining().len()),
+        format!(
+            "Changed to previous song. {} in queue.",
+            queue.remaining().len()
+        ),
     )
     .await?;
 
