@@ -1,5 +1,3 @@
-- Shuffle
-- Autojoin on play music
 - Show error when fails to play
 - Prevent rejoin
 - Send message on queue end
@@ -8,4 +6,3 @@
 - Radios (Lofi, Kernel...)
 - Configurable play permissions (only when connected to channel?)
 - Translation settings
-- Queue show current
