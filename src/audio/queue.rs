@@ -9,7 +9,7 @@ use serenity::model::id::{ChannelId, GuildId};
 use serenity::prelude::{Mutex, RwLock};
 use serenity::utils::Colour;
 use smallvec::SmallVec;
-use songbird::input::error::Error as InputError;
+use songbird::{input::error::Error as InputError, tracks::PlayMode};
 use songbird::input::Metadata;
 use songbird::tracks::{TrackError, TrackHandle, TrackState};
 use songbird::{Call, Event, EventContext, EventHandler as VoiceEventHandler, TrackEvent};
@@ -303,19 +303,26 @@ pub struct SongEndNotifier {
 #[async_trait]
 impl VoiceEventHandler for SongEndNotifier {
     async fn act(&self, ctx: &EventContext<'_>) -> Option<Event> {
-        if let EventContext::Track(_) = ctx {
-            let mut queues = get_queues_mut().await;
-            let queue = get(&mut queues, self.guild_id);
-
-            if let Err(err) = queue.next().await {
-                match err {
-                    MediaQueueError::Empty => {}
-                    err => {
-                        tracing::error!("{:?}", err)
-                    }
+        if let EventContext::Track(tracks) = ctx {
+            for (state, handle) in *tracks {
+                if state.playing != PlayMode::End && state.playing != PlayMode::Stop {
+                    continue;
                 }
-                queues.remove(&self.guild_id);
-                return Some(Event::Cancel);
+                tracing::debug!("Track {:?} finished with states {:?}", handle, state);
+
+                let mut queues = get_queues_mut().await;
+                let queue = get(&mut queues, self.guild_id);
+
+                if let Err(err) = queue.next().await {
+                    match err {
+                        MediaQueueError::Empty => {}
+                        err => {
+                            tracing::error!("{:?}", err)
+                        }
+                    }
+                    queues.remove(&self.guild_id);
+                    return Some(Event::Cancel);
+                }
             }
         }
         None
