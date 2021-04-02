@@ -434,7 +434,7 @@ impl quote::ToTokens for OptionReadConcern<'_> {
             None => tokens.extend(quote!(None)),
             Some(ReadConcern::Local) => {
                 tokens.extend(quote!(Some(wither::mongodb::options::ReadConcern::local())))
-            }
+            },
             Some(ReadConcern::Majority) => tokens.extend(quote!(Some(
                 wither::mongodb::options::ReadConcern::majority()
             ))),
@@ -484,13 +484,13 @@ impl quote::ToTokens for OptionWriteConcern<'_> {
                     Some(ack) => match ack {
                         Acknowledgment::Nodes(val) => {
                             quote!(Some(wither::mongodb::options::Acknowledgment::Nodes(#val)))
-                        }
+                        },
                         Acknowledgment::Majority => {
                             quote!(Some(wither::mongodb::options::Acknowledgment::Majority))
-                        }
+                        },
                         Acknowledgment::Custom(val) => {
                             quote!(Some(wither::mongodb::options::Acknowledgment::Custom(String::from(#val))))
-                        }
+                        },
                     },
                     None => quote!(None),
                 };
@@ -503,7 +503,7 @@ impl quote::ToTokens for OptionWriteConcern<'_> {
                     None => quote!(None),
                 };
                 tokens.extend(quote!(Some(wither::mongodb::options::WriteConcern::builder().w(#w).w_timeout(#w_timeout).journal(#journal).build())));
-            }
+            },
         }
     }
 }

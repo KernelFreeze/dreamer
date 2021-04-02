@@ -87,14 +87,14 @@ async fn _send_page(
                     _send_page(title, pages, thumbnail, page - 1, ctx, msg, Some(react_msg))
                         .await?;
                 }
-            }
+            },
             "\u{27a1}" => {
                 if page + 1 < pages.len() {
                     _send_page(title, pages, thumbnail, page + 1, ctx, msg, Some(react_msg))
                         .await?;
                 }
-            }
-            _ => {}
+            },
+            _ => {},
         }
     }
     Ok(())

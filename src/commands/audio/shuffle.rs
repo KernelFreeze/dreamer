@@ -4,6 +4,7 @@ use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
 
 use crate::audio::queue;
+use crate::utils::send_info;
 
 #[command]
 #[only_in(guilds)]
@@ -15,7 +16,8 @@ async fn shuffle(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let mut queues = queue::get_queues_mut().await;
     let queue = queue::get(&mut queues, guild_id);
     queue.shuffle();
-    msg.reply(ctx, "Shuffled the queue").await?;
+
+    send_info("voice.update", "queue.shuffled", msg, ctx).await?;
 
     Ok(())
 }

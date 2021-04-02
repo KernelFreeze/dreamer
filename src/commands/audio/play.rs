@@ -14,8 +14,7 @@ use crate::spotify;
 
 async fn get_videos<S>(query: S) -> Vec<MediaResource>
 where
-    S: AsRef<str>,
-{
+    S: AsRef<str>, {
     static RE: SyncLazy<Regex> = SyncLazy::new(|| {
         let regex = r"https?://(www\.)?[-a-zA-Z0-9@:%._\+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_\+.~#?&//=]*)";
         Regex::new(regex).expect("Failed to compile URL regex")

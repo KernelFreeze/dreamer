@@ -7,8 +7,7 @@ use crate::database::get_language;
 
 pub async fn send_info<S>(title: S, description: S, msg: &Message, ctx: &Context) -> CommandResult
 where
-    S: AsRef<str>,
-{
+    S: AsRef<str>, {
     let lang = get_language(msg.author.id, msg.guild_id).await;
     let title = lang.get(title.as_ref());
     let description = lang.get(description.as_ref());

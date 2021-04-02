@@ -51,12 +51,12 @@ async fn init_data_manager(client: &Client) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    tracing_subscriber::fmt::init();
-
     // Fetch environment variables from .env file
     if let Err(err) = dotenv() {
-        panic!("Failed to parse environment variables file: {:?}", err);
+        println!("Failed to parse environment variables file: {:?}", err);
     }
+
+    tracing_subscriber::fmt::init();
 
     // Fetch discord token
     let token = env::var("DISCORD_TOKEN")?;
@@ -78,7 +78,7 @@ async fn main() -> Result<(), Box<dyn Error>> {
                 Ok(bot_id) => (owners, bot_id.id),
                 Err(why) => panic!("Could not access the bot id: {:?}", why),
             }
-        }
+        },
         Err(why) => panic!("Could not access application info: {:?}", why),
     };
 

@@ -2,11 +2,9 @@ use std::error::Error;
 use std::lazy::SyncLazy;
 
 use regex::Regex;
+use rspotify::client::{Spotify, SpotifyBuilder};
+use rspotify::model::{AlbumId, PlaylistId, TrackId};
 use rspotify::oauth2::CredentialsBuilder;
-use rspotify::{
-    client::{Spotify, SpotifyBuilder},
-    model::{AlbumId, PlaylistId, TrackId},
-};
 use serenity::prelude::RwLock;
 
 static SPOTIFY_URL: SyncLazy<Regex> = SyncLazy::new(|| {
@@ -18,15 +16,13 @@ const PARSE_ERR: &str = "Failed to parse Spotify URI";
 
 pub fn is_spotify_url<S>(url: S) -> bool
 where
-    S: AsRef<str>,
-{
+    S: AsRef<str>, {
     SPOTIFY_URL.is_match(url.as_ref())
 }
 
 pub async fn get_titles<S>(query: S) -> Result<Vec<String>, Box<dyn Error>>
 where
-    S: AsRef<str>,
-{
+    S: AsRef<str>, {
     static SPOTIFY: SyncLazy<RwLock<Spotify>> = SyncLazy::new(|| {
         let creds = CredentialsBuilder::from_env()
             .build()
@@ -67,7 +63,7 @@ where
                     format!("{} - {}", artists.join(", "), track.name)
                 })
                 .collect()
-        }
+        },
         "track" => {
             let track = client.track(TrackId::from_id(id)?).await?;
             let artists: Vec<String> = track
@@ -76,7 +72,7 @@ where
                 .map(|artist| artist.name.clone())
                 .collect();
             vec![format!("{} - {}", artists.join(", "), track.name)]
-        }
+        },
         "playlist" => {
             let playlist = client
                 .playlist(PlaylistId::from_id(id)?, None, None)
@@ -99,7 +95,7 @@ where
                     Some(format!("{} - {}", artists.join(", "), track.name))
                 })
                 .collect()
-        }
+        },
         _ => vec![],
     };
     Ok(result)

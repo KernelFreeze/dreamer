@@ -43,7 +43,7 @@ impl MediaResource {
         self.url.clone()
     }
 
-    pub async fn url_mut(&mut self) -> Option<String> {
+    pub async fn url(&self) -> Option<String> {
         if let Some(url) = &self.url {
             return Some(url.clone());
         }
@@ -51,11 +51,7 @@ impl MediaResource {
         if let Some(search) = &self.search_query {
             let results = youtube_music::search(search).await.ok()?;
             let result = results.get(0)?;
-
-            self.url = Some(result.video_id.clone());
-            self.title = Some(result.title.clone());
-
-            return self.url.clone();
+            return Some(result.video_id.clone());
         }
         None
     }
@@ -63,8 +59,7 @@ impl MediaResource {
 
 pub async fn ytdl_metadata<S>(uri: S) -> Result<Vec<MediaResource>>
 where
-    S: AsRef<str>,
-{
+    S: AsRef<str>, {
     // Most of these flags are likely unused, but we want identical search
     // and/or selection as the above functions.
     let ytdl_args = [
@@ -220,8 +215,7 @@ async fn _ytdl_metadata(uri: &str) -> Result<Metadata> {
 
 struct YtdlRestarter<P>
 where
-    P: AsRef<str> + Send + Sync,
-{
+    P: AsRef<str> + Send + Sync, {
     uri: P,
 }
 
