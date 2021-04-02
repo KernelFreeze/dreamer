@@ -320,6 +320,10 @@ pub fn get(queues: &mut QueuesType, id: GuildId) -> &mut MediaQueue {
     queues.entry(id).or_default()
 }
 
+pub fn get_option<'a>(queues: &'a QueuesType, id: &GuildId) -> Option<&'a MediaQueue> {
+    queues.get(id)
+}
+
 pub struct SongEndNotifier {
     pub guild_id: GuildId,
 }

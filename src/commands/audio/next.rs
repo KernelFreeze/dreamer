@@ -18,7 +18,7 @@ async fn next(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
 
     msg.reply(
         ctx,
-        format!("Song skipped: {} in queue.", queue.remaining().len()),
+        format!("Song skipped. {} in queue.", queue.remaining().len()),
     )
     .await?;
 

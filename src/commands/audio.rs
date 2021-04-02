@@ -1,5 +1,6 @@
 use serenity::framework::standard::macros::group;
 
+mod back;
 mod effects;
 mod fast_forward;
 mod join;
@@ -18,6 +19,7 @@ mod song;
 mod stop;
 mod volume;
 
+use self::back::BACK_COMMAND;
 use self::join::JOIN_COMMAND;
 use self::leave::LEAVE_COMMAND;
 use self::lyrics::LYRICS_COMMAND;
@@ -34,6 +36,6 @@ use self::volume::VOLUME_COMMAND;
 
 #[group]
 #[commands(
-    join, leave, play, next, queue, stop, pause, resume, seek, lyrics, volume, song, shuffle
+    join, leave, play, next, queue, stop, pause, resume, seek, lyrics, volume, song, shuffle, back
 )]
 struct Audio;
