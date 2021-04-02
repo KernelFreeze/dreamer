@@ -12,7 +12,7 @@ use std::sync::Arc;
 
 use dotenv::dotenv;
 use mimalloc::MiMalloc;
-use serenity::client::bridge::gateway::ShardManager;
+use serenity::client::bridge::gateway::{GatewayIntents, ShardManager};
 use serenity::client::Client;
 use serenity::framework::StandardFramework;
 use serenity::http::Http;
@@ -65,31 +65,32 @@ async fn main() -> Result<(), Box<dyn Error>> {
     let owners = get_owners(&token).await?;
     let prefix = env::var("BOT_PREFIX")?;
 
-    let framework = StandardFramework::new()
-        .configure(|c| {
-            c.prefix(&prefix)
-                .no_dm_prefix(true)
-                .case_insensitivity(true)
-                .allow_dm(true)
-                .owners(owners)
-        })
-        .after(hooks::after_hook)
-        .help(&commands::help::HELP)
-        .group(&commands::AUDIO_GROUP)
-        .group(&commands::GENERAL_GROUP)
-        .bucket("basic", |b| {
-            b.time_span(10).limit(4).delay_action(hooks::delay_action)
-        })
-        .await;
-
     let mut client = Client::builder(&token)
         .event_handler(events::Handler)
-        .framework(framework)
+        .framework(
+            StandardFramework::new()
+                .configure(|c| {
+                    c.prefix(&prefix)
+                        .no_dm_prefix(true)
+                        .case_insensitivity(true)
+                        .allow_dm(true)
+                        .owners(owners)
+                })
+                .after(hooks::after_hook)
+                .help(&commands::help::HELP)
+                .group(&commands::AUDIO_GROUP)
+                .group(&commands::GENERAL_GROUP)
+                .bucket("basic", |b| {
+                    b.time_span(10).limit(4).delay_action(hooks::delay_action)
+                })
+                .await,
+        )
         .register_songbird()
+        .intents(GatewayIntents::non_privileged())
         .await?;
     init_data_manager(&client).await;
 
-    client.start().await?;
+    client.start_autosharded().await?;
     Ok(())
 }
 
