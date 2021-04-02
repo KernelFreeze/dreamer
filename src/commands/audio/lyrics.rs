@@ -12,10 +12,11 @@ async fn get_current_song(ctx: &Context, msg: &Message) -> Result<String, Comman
     let guild_id = guild.id;
 
     let queues = queue::get_queues().await;
-    let current = queue::get_option(&queues, guild_id)
-        .ok_or("Current queue is empty")?
-        .current()
-        .ok_or("Failed to fetch current song")?;
+    let queue = queue::get(&queues, guild_id)
+        .ok_or("No queue found for guild")?
+        .read()
+        .await;
+    let current = queue.current().ok_or("Failed to fetch current song")?;
     let title = current.title().ok_or("Failed to fetch current song")?;
     Ok(title)
 }

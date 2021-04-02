@@ -22,10 +22,12 @@ async fn queue(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let empty = lang.get("queue.empty");
 
     let queues = queue::get_queues().await;
-    let queue: Vec<String> = queues
-        .get(&guild_id)
-        .ok_or(empty)?
-        .get()
+    let queue = queue::get(&queues, guild_id)
+        .ok_or("No queue found for guild")?
+        .read()
+        .await;
+    let queue: Vec<String> = queue
+        .get_tracks()
         .iter()
         .filter_map(MediaResource::title)
         .enumerate()

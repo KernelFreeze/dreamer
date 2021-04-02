@@ -17,9 +17,10 @@ async fn song(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild_id = guild.id;
 
     let queues = queue::get_queues().await;
-    let queue = queues
-        .get(&guild_id)
-        .ok_or("Not currently playing. Queue is empty.")?;
+    let queue = queue::get(&queues, guild_id)
+        .ok_or("No queue found for guild")?
+        .read()
+        .await;
     let current = queue.current().ok_or("Not currently playing.")?;
     let info = queue.track_info().await?;
     let metadata = queue.metadata().await?;

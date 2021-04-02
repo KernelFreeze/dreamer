@@ -20,7 +20,7 @@ use tracing::{debug, instrument, warn};
 use super::source::{self, MediaResource};
 use crate::constants::MUSIC_ICON;
 
-pub type QueuesType = HashMap<GuildId, MediaQueue>;
+pub type QueuesType = HashMap<GuildId, RwLock<MediaQueue>>;
 
 static QUEUES: SyncLazy<RwLock<QueuesType>> = SyncLazy::new(|| RwLock::new(HashMap::new()));
 
@@ -81,7 +81,7 @@ impl MediaQueue {
         self.inner.get(self.curr)
     }
 
-    pub fn get(&self) -> &SmallVec<[MediaResource; 5]> {
+    pub fn get_tracks(&self) -> &SmallVec<[MediaResource; 5]> {
         &self.inner
     }
 
@@ -316,11 +316,11 @@ pub async fn get_queues_mut<'a>() -> RwLockWriteGuard<'a, QueuesType> {
     QUEUES.write().await
 }
 
-pub fn get(queues: &mut QueuesType, id: GuildId) -> &mut MediaQueue {
-    queues.entry(id).or_default()
+pub async fn get_write(queues: &mut QueuesType, id: GuildId) -> RwLockWriteGuard<'_, MediaQueue> {
+    queues.entry(id).or_default().write().await
 }
 
-pub fn get_option(queues: &QueuesType, id: GuildId) -> Option<&MediaQueue> {
+pub fn get(queues: &QueuesType, id: GuildId) -> Option<&RwLock<MediaQueue>> {
     queues.get(&id)
 }
 
@@ -338,17 +338,12 @@ impl VoiceEventHandler for SongEndNotifier {
                 }
                 debug!("Track {:?} finished with states {:?}", handle, state);
 
-                let mut queues = get_queues_mut().await;
-                let queue = get(&mut queues, self.guild_id);
-
-                if let Err(err) = queue.next().await {
-                    match err {
-                        MediaQueueError::Empty => {},
-                        err => {
-                            tracing::error!("{:?}", err)
-                        },
+                let queues = get_queues().await;
+                if let Some(queue) = get(&queues, self.guild_id) {
+                    if queue.write().await.next().await.is_err() {
+                        return Some(Event::Cancel);
                     }
-                    queues.remove(&self.guild_id);
+                } else {
                     return Some(Event::Cancel);
                 }
             }

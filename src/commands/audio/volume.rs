@@ -17,8 +17,11 @@ async fn volume(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
         return Err("Volume must be in range from 0 to 200".into());
     }
 
-    let mut queues = queue::get_queues_mut().await;
-    let queue = queue::get(&mut queues, guild_id);
+    let queues = queue::get_queues().await;
+    let mut queue = queue::get(&queues, guild_id)
+        .ok_or("No queue found for guild")?
+        .write()
+        .await;
     queue.volume(f32::from(volume) / 100.0)?;
     msg.reply(ctx, format!("Set volume to {}%", volume)).await?;
 

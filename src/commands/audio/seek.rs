@@ -13,8 +13,11 @@ async fn seek(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;
     let guild_id = guild.id;
 
-    let mut queues = queue::get_queues_mut().await;
-    let queue = queue::get(&mut queues, guild_id);
+    let queues = queue::get_queues().await;
+    let mut queue = queue::get(&queues, guild_id)
+        .ok_or("No queue found for guild")?
+        .write()
+        .await;
     let position = args
         .remains()
         .ok_or("You must provide a position to seek")?;

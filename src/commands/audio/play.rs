@@ -97,7 +97,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     }
 
     let mut queues = queue::get_queues_mut().await;
-    let queue = queue::get(&mut queues, guild_id);
+    let mut queue = queue::get_write(&mut queues, guild_id).await;
 
     // Add all audios to the queue
     for audio in audios {
