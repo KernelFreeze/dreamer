@@ -16,6 +16,7 @@ use serenity::client::bridge::gateway::ShardManager;
 use serenity::client::Client;
 use serenity::framework::StandardFramework;
 use serenity::http::Http;
+use serenity::model::id::UserId;
 use serenity::prelude::*;
 use songbird::SerenityInit;
 
@@ -61,25 +62,9 @@ async fn main() -> Result<(), Box<dyn Error>> {
     // Connect to database
     database::connect(&env::var("DATABASE_URI")?).await?;
 
-    // Fetch bot owners from Discord application
-    let http = Http::new_with_token(&token);
-    let (owners, _) = match http.get_current_application_info().await {
-        Ok(info) => {
-            let mut owners = HashSet::new();
-            if let Some(team) = info.team {
-                owners.insert(team.owner_user_id);
-            } else {
-                owners.insert(info.owner.id);
-            }
-            match http.get_current_user().await {
-                Ok(bot_id) => (owners, bot_id.id),
-                Err(why) => panic!("Could not access the bot id: {:?}", why),
-            }
-        },
-        Err(why) => panic!("Could not access application info: {:?}", why),
-    };
-
+    let owners = get_owners(&token).await?;
     let prefix = env::var("BOT_PREFIX")?;
+
     let framework = StandardFramework::new()
         .configure(|c| {
             c.prefix(&prefix)
@@ -106,4 +91,18 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     client.start().await?;
     Ok(())
+}
+
+/// Fetch bot owners from Discord application
+async fn get_owners(token: &String) -> Result<HashSet<UserId>, Box<dyn Error>> {
+    let http = Http::new_with_token(token);
+    let info = http.get_current_application_info().await?;
+
+    let mut owners = HashSet::new();
+    if let Some(team) = info.team {
+        owners.insert(team.owner_user_id);
+    } else {
+        owners.insert(info.owner.id);
+    }
+    Ok(owners)
 }
