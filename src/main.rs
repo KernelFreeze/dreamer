@@ -29,7 +29,6 @@ mod events;
 mod hooks;
 mod lang;
 mod paginator;
-mod spotify;
 mod utils;
 
 #[global_allocator]

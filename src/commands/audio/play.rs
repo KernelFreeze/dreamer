@@ -7,10 +7,9 @@ use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
 use serenity::utils::Colour;
 
-use crate::audio::queue;
 use crate::audio::source::{ytdl_metadata, MediaResource};
+use crate::audio::{queue, spotify};
 use crate::constants::MUSIC_ICON;
-use crate::spotify;
 
 async fn get_videos<S>(query: S) -> Vec<MediaResource>
 where
@@ -58,8 +57,30 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         .await
         .ok_or("Voice client was not initialized")?
         .clone();
-    let handler_lock = manager.get(guild_id).ok_or("Not in a voice channel")?;
-    let channel = msg.channel_id;
+
+    // Join call if not inside one
+    let call = match manager.get(guild_id) {
+        Some(lock) => lock,
+        None => {
+            let voice_channel = guild
+                .voice_states
+                .get(&msg.author.id)
+                .and_then(|voice_state| voice_state.channel_id)
+                .ok_or("Not in a voice channel")?;
+
+            let (call, result) = manager.join(guild.id, voice_channel).await;
+            result?;
+            call
+        },
+    };
+
+    // Deafen if not deafened
+    {
+        let mut handler = call.lock().await;
+        if !handler.is_deaf() {
+            handler.deafen(true).await?;
+        }
+    }
 
     // Early exit if no videos found
     if audio_len == 0 {
@@ -79,13 +100,15 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let mut queues = queue::get_queues_mut().await;
     let queue = queue::get(&mut queues, guild_id);
 
-    // Add all videos to the queue
+    // Add all audios to the queue
     for audio in audios {
         queue.add(audio);
     }
 
-    // Show embed for every video
-    channel
+    let text_channel = msg.channel_id;
+
+    // Show embed for every audio
+    text_channel
         .send_message(&ctx.http, |m| {
             m.reference_message(msg);
             m.allowed_mentions(|f| f.replied_user(false));
@@ -114,7 +137,7 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         .await?;
 
     queue
-        .start(handler_lock.clone(), channel, guild_id, ctx.http.clone())
+        .start(call.clone(), text_channel, guild_id, ctx.http.clone())
         .await?;
 
     Ok(())

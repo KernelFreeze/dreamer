@@ -81,19 +81,15 @@ impl MediaQueue {
         self.inner.get(self.curr)
     }
 
-    pub fn current_mut(&mut self) -> Option<&mut MediaResource> {
-        self.inner.get_mut(self.curr)
-    }
-
     pub fn get(&self) -> &SmallVec<[MediaResource; 5]> {
         &self.inner
     }
 
     pub async fn back(&mut self) -> Result<(), MediaQueueError> {
         debug!("Skipping to previous song");
-        self.inner
-            .get(self.curr - 1)
-            .ok_or(MediaQueueError::NoBack)?;
+        if self.curr == 0 {
+            return Err(MediaQueueError::NoBack);
+        }
         self.curr -= 1;
         self.play().await?;
         Ok(())
@@ -269,19 +265,25 @@ impl MediaQueue {
         track.set_volume(self.volume);
         handler.play_only(track);
 
+        self.send_song_message(&song).await?;
+
+        self.curr_handle = Some(song);
+        Ok(())
+    }
+
+    async fn send_song_message(&self, song: &TrackHandle) -> Result<(), MediaQueueError> {
         let http = self
             .http
             .clone()
             .ok_or(MediaQueueError::ChannelPlayFailure)?;
         let channel = self.channel.ok_or(MediaQueueError::ChannelPlayFailure)?;
-
         let msg_err = channel
             .send_message(&http, |m| {
                 m.embed(|e| {
                     e.thumbnail(MUSIC_ICON);
                     e.color(Colour::DARK_PURPLE);
                     e.title("Now Playing");
-                    
+            
                     if let Some(url) = song.metadata().source_url.as_deref() {
                         e.url(url);
                     }
@@ -299,12 +301,9 @@ impl MediaQueue {
                 m
             })
             .await;
-        if let Err(err) = msg_err {
+        Ok(if let Err(err) = msg_err {
             warn!("Failed to send next song message: {:?}", err);
-        }
-
-        self.curr_handle = Some(song);
-        Ok(())
+        })
     }
 }
 
