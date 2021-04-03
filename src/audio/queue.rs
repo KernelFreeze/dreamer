@@ -1,5 +1,4 @@
 use std::collections::HashMap;
-use std::error::Error;
 use std::lazy::SyncLazy;
 use std::sync::Arc;
 use std::time::Duration;
@@ -16,7 +15,7 @@ use songbird::tracks::{PlayMode, TrackError, TrackHandle, TrackState};
 use songbird::{Call, Event, EventContext, EventHandler as VoiceEventHandler, TrackEvent};
 use thiserror::Error;
 use tokio::sync::{RwLockReadGuard, RwLockWriteGuard};
-use tracing::{debug, instrument, warn};
+use tracing::{debug, error, instrument, warn};
 
 use super::source::{self, MediaResource};
 use crate::constants::MUSIC_ICON;
@@ -45,11 +44,17 @@ pub enum MediaQueueError {
     #[error("Failed to play song in your channel")]
     ChannelPlayFailure,
 
+    #[error("Failed to get current channel")]
+    CurrentChannelError,
+
     #[error("Failed to create source input")]
     Input(InputError),
 
     #[error("Failed track operation")]
     Track(#[from] TrackError),
+
+    #[error("Serenity error")]
+    SerenityError(#[from] serenity::Error),
 }
 
 #[derive(Debug, Clone)]
@@ -61,6 +66,7 @@ pub struct MediaQueue {
     curr_handle: Option<TrackHandle>,
     handler_lock: Option<Arc<Mutex<Call>>>,
     channel: Option<ChannelId>,
+    voice_channel: Option<ChannelId>,
     http: Option<Arc<Http>>,
 }
 
@@ -74,6 +80,7 @@ impl Default for MediaQueue {
             curr_handle: None,
             handler_lock: None,
             channel: None,
+            voice_channel: None,
             http: None,
         }
     }
@@ -227,7 +234,7 @@ impl MediaQueue {
     #[instrument]
     pub async fn start(
         &mut self, handler_lock: Arc<Mutex<Call>>, channel: ChannelId, guild_id: GuildId,
-        http: Arc<Http>,
+        http: Arc<Http>, voice_channel: ChannelId,
     ) -> Result<(), MediaQueueError> {
         if self.is_playing() {
             debug!("Media player already initialized");
@@ -237,6 +244,7 @@ impl MediaQueue {
         self.handler_lock = Some(handler_lock.clone());
         self.http = Some(http.clone());
         self.channel = Some(channel);
+        self.voice_channel = Some(voice_channel);
 
         handler_lock
             .lock()
@@ -271,7 +279,7 @@ impl MediaQueue {
     #[instrument]
     async fn create_player(&self, url: String) -> Result<TrackHandle, MediaQueueError> {
         debug!("Creating player");
-        let handler_lock = self
+        let call = self
             .handler_lock
             .clone()
             .ok_or(MediaQueueError::ChannelPlayFailure)?;
@@ -281,19 +289,78 @@ impl MediaQueue {
 
         let (mut track, song) = songbird::tracks::create_player(compressed.into());
 
-        let mut handler = handler_lock.lock().await;
+        let mut handler = call.lock().await;
         track.set_volume(self.volume);
         handler.play_only(track);
 
+        let http = self
+            .http
+            .clone()
+            .ok_or(MediaQueueError::CurrentChannelError)?;
+
+        let chan = self
+            .voice_channel
+            .ok_or(MediaQueueError::CurrentChannelError)?
+            .to_channel(&http)
+            .await?
+            .guild()
+            .ok_or(MediaQueueError::CurrentChannelError)?;
+
+        let _ = chan
+            .edit_own_voice_state(&http, |v| v.suppress(false))
+            .await;
+
         Ok(song)
+    }
+
+    pub async fn send_queue_error(&self, err: MediaQueueError) -> Result<(), MediaQueueError> {
+        let http = self
+            .http
+            .clone()
+            .ok_or(MediaQueueError::CurrentChannelError)?;
+        let channel = self.channel.ok_or(MediaQueueError::CurrentChannelError)?;
+
+        match err {
+            MediaQueueError::Empty => {
+                let _ = channel
+                    .send_message(&http, |m| {
+                        m.embed(|e| {
+                            e.thumbnail(MUSIC_ICON);
+                            e.color(Colour::DARK_PURPLE);
+                            e.title("Finished queue");
+                            e.description("Finished all elements in the sound player queue");
+
+                            e
+                        });
+                        m
+                    })
+                    .await;
+            },
+            _ => {
+                let _ = channel
+                    .send_message(&http, |m| {
+                        m.embed(|e| {
+                            e.thumbnail(MUSIC_ICON);
+                            e.color(Colour::DARK_RED);
+                            e.title("Music player error");
+                            e.description(format!("{:?}", err));
+
+                            e
+                        });
+                        m
+                    })
+                    .await;
+            },
+        }
+        Ok(())
     }
 
     async fn send_song_message(&self, song: &TrackHandle) -> Result<(), MediaQueueError> {
         let http = self
             .http
             .clone()
-            .ok_or(MediaQueueError::ChannelPlayFailure)?;
-        let channel = self.channel.ok_or(MediaQueueError::ChannelPlayFailure)?;
+            .ok_or(MediaQueueError::CurrentChannelError)?;
+        let channel = self.channel.ok_or(MediaQueueError::CurrentChannelError)?;
         let msg_err = channel
             .send_message(&http, |m| {
                 m.embed(|e| {
@@ -333,10 +400,6 @@ pub async fn get_queues_mut<'a>() -> RwLockWriteGuard<'a, QueuesType> {
     QUEUES.write().await
 }
 
-pub async fn get_write(queues: &mut QueuesType, id: GuildId) -> RwLockWriteGuard<'_, MediaQueue> {
-    queues.entry(id).or_default().write().await
-}
-
 pub fn get_or_create(queues: &mut QueuesType, id: GuildId) -> &RwLock<MediaQueue> {
     queues.entry(id).or_default()
 }
@@ -345,18 +408,18 @@ pub fn get(queues: &QueuesType, id: GuildId) -> Option<&RwLock<MediaQueue>> {
     queues.get(&id)
 }
 
-pub async fn try_play_all(
-    guild_id: GuildId, next: bool,
-) -> Result<(), Box<dyn Error + Send + Sync>> {
+pub async fn try_play_all(guild_id: GuildId, next: bool) -> Result<(), MediaQueueError> {
     let queues = get_queues().await;
-    let queue = get(&queues, guild_id).ok_or("There are no active queue for this server")?;
+    let queue = get(&queues, guild_id).ok_or(MediaQueueError::Empty)?;
 
     if next {
         queue.write().await.next().await?;
     }
 
     let mut song = queue.read().await.play().await;
-    while song.is_err() {
+    while let Err(err) = song {
+        error!("Failed to play song {:?}", err);
+
         if queue.write().await.next().await.is_err() {
             return Err(MediaQueueError::QueueEnd.into());
         }
@@ -388,8 +451,14 @@ impl VoiceEventHandler for SongEndNotifier {
                     state
                 );
 
-                if let Err(_) = try_play_all(self.guild_id, true).await {
-                    get_queues_mut().await.remove(&self.guild_id);
+                if let Err(err) = try_play_all(self.guild_id, true).await {
+                    let queues = get_queues().await;
+                    if let Some(queue) = get(&queues, self.guild_id) {
+                        if let Err(err) = queue.read().await.send_queue_error(err).await {
+                            warn!("Failed to display queue error: {:?}", err);
+                        }
+                    }
+
                     return Some(Event::Cancel);
                 }
             }

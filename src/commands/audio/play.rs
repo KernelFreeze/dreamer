@@ -52,15 +52,22 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let audio_len = audios.len();
 
     let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;
-    let guild_id = guild.id;
 
     let manager = songbird::get(ctx)
         .await
         .ok_or("Voice client was not initialized")?
         .clone();
 
+    {
+        let mut queues = queue::get_queues_mut().await;
+        queue::get_or_create(&mut queues, guild.id);
+    }
+
+    let queues = queue::get_queues().await;
+    let queue = queue::get(&queues, guild.id).ok_or("Failed to create queue")?;
+
     // Join call if not inside one
-    let call = if let Some(lock) = manager.get(guild_id) {
+    let call = if let Some(lock) = manager.get(guild.id) {
         lock
     } else {
         let voice_channel = guild
@@ -71,6 +78,13 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
 
         let (call, result) = manager.join(guild.id, voice_channel).await;
         result?;
+
+        queue
+            .write()
+            .await
+            .start(call.clone(), msg.channel_id, guild.id, ctx.http.clone(), voice_channel)
+            .await?;
+
         call
     };
 
@@ -96,14 +110,6 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     if audio_list.is_empty() {
         audio_list = "\u{279c} (Titles not displayed)".to_string();
     }
-
-    {
-        let mut queues = queue::get_queues_mut().await;
-        queue::get_or_create(&mut queues, guild_id);
-    }
-
-    let queues = queue::get_queues().await;
-    let queue = queue::get(&queues, guild_id).ok_or("Failed to create queue")?;
 
     // Add all audios to the queue
     for audio in audios {
@@ -141,6 +147,6 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         })
         .await?;
 
-    try_play_all(guild_id, false).await?;
+    try_play_all(guild.id, false).await?;
     Ok(())
 }
