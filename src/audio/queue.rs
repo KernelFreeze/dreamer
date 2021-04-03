@@ -5,6 +5,7 @@ use std::time::Duration;
 
 use serenity::async_trait;
 use serenity::http::Http;
+use serenity::model::channel::ChannelType;
 use serenity::model::id::{ChannelId, GuildId};
 use serenity::prelude::{Mutex, RwLock};
 use serenity::utils::Colour;
@@ -298,7 +299,7 @@ impl MediaQueue {
             .clone()
             .ok_or(MediaQueueError::CurrentChannelError)?;
 
-        let chan = self
+        let mut chan = self
             .voice_channel
             .ok_or(MediaQueueError::CurrentChannelError)?
             .to_channel(&http)
@@ -306,9 +307,21 @@ impl MediaQueue {
             .guild()
             .ok_or(MediaQueueError::CurrentChannelError)?;
 
-        let _ = chan
-            .edit_own_voice_state(&http, |v| v.suppress(false))
-            .await;
+        if chan.kind == ChannelType::Stage {
+            let _ = chan
+                .edit_own_voice_state(&http, |v| v.suppress(false))
+                .await;
+
+            if let Some(title) = song.metadata().title.as_deref() {
+                if let Some(artist) = song.metadata().artist.as_deref() {
+                    let _ = chan
+                        .edit(&http, |c| c.topic(format!("{} - {}", title, artist)))
+                        .await;
+                } else {
+                    let _ = chan.edit(&http, |c| c.topic(title)).await;
+                }
+            }
+        }
 
         Ok(song)
     }
