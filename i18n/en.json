@@ -11,6 +11,7 @@
     "queue.volume": "Set volume to {volume}%",
     "queue.clear": "Queue cleared.",
     "queue.pause": "Paused sound player.",
+    "queue.loop": "Looping the queue.",
     "queue.resume": "Resumed sound player.",
     "audio.seek": "Changed to position {position}",
     "page.number": "Page {number} of {total}",

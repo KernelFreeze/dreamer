@@ -1,6 +1,6 @@
 use std::lazy::SyncLazy;
 
-use queue::MediaQueueError;
+use queue::{try_play_all, MediaQueueError};
 use regex::Regex;
 use serenity::client::Context;
 use serenity::framework::standard::macros::command;
@@ -141,24 +141,6 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         })
         .await?;
 
-    queue
-        .write()
-        .await
-        .start(call.clone(), text_channel, guild_id, ctx.http.clone())
-        .await?;
-
-    let mut song = queue.read().await.play().await;
-    while song.is_err() {
-        if { queue.write().await.next().await }.is_err() {
-            return Err(MediaQueueError::FailedToStart.into());
-        }
-
-        song = queue.read().await.play().await;
-    }
-
-    if let Ok(song) = song {
-        queue.write().await.update_song(song).await;
-    }
-
+    try_play_all(guild_id, false).await?;
     Ok(())
 }

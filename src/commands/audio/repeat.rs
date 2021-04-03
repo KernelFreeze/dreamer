@@ -4,6 +4,7 @@ use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
 
 use crate::audio::queue;
+use crate::utils::send_info;
 
 #[command]
 #[only_in(guilds)]
@@ -20,5 +21,5 @@ async fn repeat(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .await;
     queue.toggle_repeat();
 
-    Ok(())
+    send_info("voice.update", "queue.loop", msg, ctx).await
 }

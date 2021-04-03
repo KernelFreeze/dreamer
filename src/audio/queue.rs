@@ -1,4 +1,5 @@
 use std::collections::HashMap;
+use std::error::Error;
 use std::lazy::SyncLazy;
 use std::sync::Arc;
 use std::time::Duration;
@@ -35,8 +36,8 @@ pub enum MediaQueueError {
     #[error("Queue has no playing element")]
     NotPlaying,
 
-    #[error("Failed to start queue play")]
-    FailedToStart,
+    #[error("Reached end of the queue")]
+    QueueEnd,
 
     #[error("Failed to find an url for the requested media")]
     NoUrl,
@@ -344,6 +345,31 @@ pub fn get(queues: &QueuesType, id: GuildId) -> Option<&RwLock<MediaQueue>> {
     queues.get(&id)
 }
 
+pub async fn try_play_all(
+    guild_id: GuildId, next: bool,
+) -> Result<(), Box<dyn Error + Send + Sync>> {
+    let queues = get_queues().await;
+    let queue = get(&queues, guild_id).ok_or("There are no active queue for this server")?;
+
+    if next {
+        queue.write().await.next().await?;
+    }
+
+    let mut song = queue.read().await.play().await;
+    while song.is_err() {
+        if queue.write().await.next().await.is_err() {
+            return Err(MediaQueueError::QueueEnd.into());
+        }
+
+        song = queue.read().await.play().await;
+    }
+    if let Ok(song) = song {
+        queue.write().await.update_song(song).await;
+    }
+
+    Ok(())
+}
+
 pub struct SongEndNotifier {
     pub guild_id: GuildId,
 }
@@ -362,18 +388,8 @@ impl VoiceEventHandler for SongEndNotifier {
                     state
                 );
 
-                let queues = get_queues().await;
-                if let Some(queue) = get(&queues, self.guild_id) {
-                    while queue.write().await.next().await.is_ok() {
-                        if let Ok(song) = queue.read().await.play().await {
-                            queue.write().await.update_song(song).await;
-                            return None;
-                        }
-                    }
-
+                if let Err(_) = try_play_all(self.guild_id, true).await {
                     get_queues_mut().await.remove(&self.guild_id);
-                    return Some(Event::Cancel);
-                } else {
                     return Some(Event::Cancel);
                 }
             }

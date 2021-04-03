@@ -28,6 +28,7 @@ use self::next::NEXT_COMMAND;
 use self::pause::PAUSE_COMMAND;
 use self::play::PLAY_COMMAND;
 use self::queue::QUEUE_COMMAND;
+use self::repeat::REPEAT_COMMAND;
 use self::resume::RESUME_COMMAND;
 use self::rewind::REWIND_COMMAND;
 use self::seek::SEEK_COMMAND;
@@ -53,6 +54,7 @@ use self::volume::VOLUME_COMMAND;
     shuffle,
     back,
     fast_forward,
-    rewind
+    rewind,
+    repeat
 )]
 struct Audio;
