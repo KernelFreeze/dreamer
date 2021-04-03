@@ -37,7 +37,7 @@ async fn latency(ctx: &Context, msg: &Message) -> CommandResult {
     };
 
     if let Some(latency) = runner.latency {
-        msg.reply(ctx, &format!("The shard latency is {:?}", latency))
+        msg.reply(ctx, &format!("The current instance latency is {:?}", latency))
             .await?;
     } else {
         msg.reply(ctx, "Latency data is not available.").await?;

@@ -58,6 +58,12 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         .ok_or("Voice client was not initialized")?
         .clone();
 
+    let voice_channel = guild
+        .voice_states
+        .get(&msg.author.id)
+        .and_then(|voice_state| voice_state.channel_id)
+        .ok_or("Not in a voice channel")?;
+
     {
         let mut queues = queue::get_queues_mut().await;
         queue::get_or_create(&mut queues, guild.id);
@@ -66,23 +72,29 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let queues = queue::get_queues().await;
     let queue = queue::get(&queues, guild.id).ok_or("Failed to create queue")?;
 
+    if let Some(vc) = queue.read().await.voice_channel() {
+        if voice_channel != vc {
+            return Err("You are not in the current bot voice channel.".into());
+        }
+    }
+
     // Join call if not inside one
     let call = if let Some(lock) = manager.get(guild.id) {
         lock
     } else {
-        let voice_channel = guild
-            .voice_states
-            .get(&msg.author.id)
-            .and_then(|voice_state| voice_state.channel_id)
-            .ok_or("Not in a voice channel")?;
-
         let (call, result) = manager.join(guild.id, voice_channel).await;
         result?;
 
         queue
             .write()
             .await
-            .start(call.clone(), msg.channel_id, guild.id, ctx.http.clone(), voice_channel)
+            .start(
+                call.clone(),
+                msg.channel_id,
+                guild.id,
+                ctx.http.clone(),
+                voice_channel,
+            )
             .await?;
 
         call
@@ -147,6 +159,8 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         })
         .await?;
 
-    try_play_all(guild.id, false).await?;
+    if !queue.read().await.is_playing() {
+        try_play_all(guild.id, false).await?;
+    }
     Ok(())
 }

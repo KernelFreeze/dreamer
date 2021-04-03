@@ -25,6 +25,10 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         .ok_or("Voice client was not initialized")?
         .clone();
 
+    if manager.get(guild.id).is_some() {
+        return Err("I'm already on a voice channel!".into());
+    }
+
     let (call, result) = manager.join(guild.id, voice_channel).await;
     result?;
 

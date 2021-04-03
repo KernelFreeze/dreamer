@@ -21,5 +21,9 @@ async fn repeat(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .await;
     queue.toggle_repeat();
 
-    send_info("voice.update", "queue.loop", msg, ctx).await
+    if queue.repeat() {
+        send_info("voice.update", "queue.loop.enable", msg, ctx).await
+    } else {
+        send_info("voice.update", "queue.loop.disable", msg, ctx).await
+    }
 }

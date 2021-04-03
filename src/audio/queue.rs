@@ -108,6 +108,10 @@ impl MediaQueue {
         &self.inner
     }
 
+    pub fn voice_channel(&self) -> Option<ChannelId> {
+        self.voice_channel
+    }
+
     pub async fn back(&mut self) -> Result<(), MediaQueueError> {
         debug!("Skipping to previous song");
         if self.curr == 0 {
@@ -463,6 +467,7 @@ impl VoiceEventHandler for SongEndNotifier {
                         }
                     }
 
+                    get_queues_mut().await.remove(&self.guild_id);
                     return Some(Event::Cancel);
                 }
             }
