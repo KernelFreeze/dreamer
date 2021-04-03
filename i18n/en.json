@@ -6,6 +6,13 @@
     "queue.title": "Queue for {guild}",
     "queue.empty": "Not currently playing. Queue is empty.",
     "queue.songs": "There are {total} songs in the queue",
+    "queue.back": "Changed to previous song. {remaining} in queue.",
+    "queue.next": "Song skipped. {remaining} in queue.",
+    "queue.volume": "Set volume to {volume}%",
+    "queue.clear": "Queue cleared.",
+    "queue.pause": "Paused sound player.",
+    "queue.resume": "Resumed sound player.",
+    "audio.seek": "Changed to position {position}",
     "page.number": "Page {number} of {total}",
     "command.error.internal": "Failed to process this command. {error}",
     "command.error.title": "Error"

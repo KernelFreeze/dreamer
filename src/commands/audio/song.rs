@@ -21,16 +21,15 @@ async fn song(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .ok_or("No queue found for guild")?
         .read()
         .await;
-    let current = queue.current().ok_or("Not currently playing.")?;
-    let info = queue.track_info().await?;
+
     let metadata = queue.metadata().await?;
 
-    let start = info.position;
+    let position = queue.track_info().await?.position;
     let end = metadata.duration.ok_or("Failed to fetch track length")?;
 
     let mut progress_bar = Bar::new();
     progress_bar.set_len(35);
-    progress_bar.set(start.as_secs() as f64 / end.as_secs() as f64);
+    progress_bar.set(position.as_secs() as f64 / end.as_secs() as f64);
     progress_bar.set_style("[\u{25ac}\u{29bf}\u{25ac}]");
 
     msg.channel_id
@@ -49,10 +48,10 @@ async fn song(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
                 });
 
                 e.color(Colour::DARK_PURPLE);
-                e.title(current.title().unwrap_or_else(|| String::from("Unknown")));
+                e.title(metadata.title.as_deref().unwrap_or("Unknown"));
                 e.description(format!(
                     "```\n{} {} {}\n```",
-                    start.hhmmss(),
+                    position.hhmmss(),
                     progress_bar,
                     end.hhmmss(),
                 ));

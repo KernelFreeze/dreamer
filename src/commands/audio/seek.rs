@@ -1,10 +1,13 @@
+use hhmmss::Hhmmss;
 use humantime::parse_duration;
+use serde_json::json;
 use serenity::client::Context;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
 
 use crate::audio::queue;
+use crate::utils::send_translated_info;
 
 #[command]
 #[only_in(guilds)]
@@ -23,5 +26,14 @@ async fn seek(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         .ok_or("You must provide a position to seek")?;
     queue.seek(parse_duration(position)?)?;
 
-    Ok(())
+    let position = queue.track_info().await?.position;
+
+    send_translated_info(
+        "voice.update",
+        "audio.seek",
+        json!({ "position": position.hhmmss() }),
+        msg,
+        ctx,
+    )
+    .await
 }

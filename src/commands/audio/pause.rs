@@ -3,7 +3,7 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
 
-use crate::audio::queue;
+use crate::{audio::queue, utils::send_info};
 
 #[command]
 #[only_in(guilds)]
@@ -18,7 +18,6 @@ async fn pause(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .write()
         .await;
     queue.pause()?;
-    msg.reply(ctx, "Paused sound player.").await?;
-
-    Ok(())
+    
+    send_info("voice.update", "voice.pause", msg, ctx).await
 }

@@ -1,9 +1,11 @@
+use serde_json::json;
 use serenity::client::Context;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
 
 use crate::audio::queue;
+use crate::utils::send_translated_info;
 
 #[command]
 #[only_in(guilds)]
@@ -18,14 +20,12 @@ async fn back(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .await;
     queue.back().await?;
 
-    msg.reply(
+    send_translated_info(
+        "voice.update",
+        "queue.back",
+        json!({"remaining": queue.remaining().len()}),
+        msg,
         ctx,
-        format!(
-            "Changed to previous song. {} in queue.",
-            queue.remaining().len()
-        ),
     )
-    .await?;
-
-    Ok(())
+    .await
 }

@@ -1,9 +1,11 @@
+use serde_json::json;
 use serenity::client::Context;
 use serenity::framework::standard::macros::command;
 use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
 
 use crate::audio::queue;
+use crate::utils::send_translated_info;
 
 #[command]
 #[only_in(guilds)]
@@ -25,5 +27,12 @@ async fn volume(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     queue.volume(f32::from(volume) / 100.0)?;
     msg.reply(ctx, format!("Set volume to {}%", volume)).await?;
 
-    Ok(())
+    send_translated_info(
+        "voice.update",
+        "queue.volume",
+        json!({"volume": volume}),
+        msg,
+        ctx,
+    )
+    .await
 }

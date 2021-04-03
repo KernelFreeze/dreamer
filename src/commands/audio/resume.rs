@@ -4,6 +4,7 @@ use serenity::framework::standard::{Args, CommandResult};
 use serenity::model::channel::Message;
 
 use crate::audio::queue;
+use crate::utils::send_info;
 
 #[command]
 #[only_in(guilds)]
@@ -18,7 +19,6 @@ async fn resume(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .write()
         .await;
     queue.resume()?;
-    msg.reply(ctx, "Resumed sound player.").await?;
 
-    Ok(())
+    send_info("voice.update", "voice.resume", msg, ctx).await
 }

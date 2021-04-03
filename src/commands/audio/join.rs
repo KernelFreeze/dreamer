@@ -32,7 +32,5 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         handler.deafen(true).await?;
     }
 
-    send_info("voice.update", "voice.joined", msg, ctx).await?;
-
-    Ok(())
+    send_info("voice.update", "voice.joined", msg, ctx).await
 }

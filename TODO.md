@@ -1,3 +1,5 @@
+- Queue show current
+- Queue loop
 - Show error when fails to play
 - Prevent rejoin
 - Send message on queue end

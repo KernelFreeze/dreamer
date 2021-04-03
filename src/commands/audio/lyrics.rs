@@ -23,7 +23,6 @@ async fn get_current_song(ctx: &Context, msg: &Message) -> Result<String, Comman
 
 #[command]
 #[only_in(guilds)]
-#[aliases("letra")]
 async fn lyrics(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let name = match args.remains() {
         Some(t) => Some(t.to_string()),
