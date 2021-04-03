@@ -341,6 +341,7 @@ impl VoiceEventHandler for SongEndNotifier {
                 let queues = get_queues().await;
                 if let Some(queue) = get(&queues, self.guild_id) {
                     if queue.write().await.next().await.is_err() {
+                        get_queues_mut().await.remove(&self.guild_id);
                         return Some(Event::Cancel);
                     }
                 } else {

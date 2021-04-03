@@ -3,6 +3,7 @@ use serenity::framework::standard::macros::command;
 use serenity::framework::standard::CommandResult;
 use serenity::model::channel::Message;
 
+use crate::audio::queue;
 use crate::utils::send_info;
 
 #[command]
@@ -18,6 +19,8 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
         .await
         .ok_or("Voice client was not initialized")?
         .clone();
+
+    queue::get_queues_mut().await.remove(&guild_id);
 
     manager.get(guild_id).ok_or("Not in a voice channel")?;
     manager.remove(guild_id).await?;
