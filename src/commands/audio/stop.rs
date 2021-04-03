@@ -20,5 +20,5 @@ async fn stop(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .await;
     queue.clear()?;
 
-    send_info("voice.update", "voice.clear", msg, ctx).await
+    send_info("voice.update", "queue.clear", msg, ctx).await
 }

@@ -299,7 +299,7 @@ impl MediaQueue {
             .clone()
             .ok_or(MediaQueueError::CurrentChannelError)?;
 
-        let mut chan = self
+        let chan = self
             .voice_channel
             .ok_or(MediaQueueError::CurrentChannelError)?
             .to_channel(&http)
@@ -311,16 +311,6 @@ impl MediaQueue {
             let _ = chan
                 .edit_own_voice_state(&http, |v| v.suppress(false))
                 .await;
-
-            if let Some(title) = song.metadata().title.as_deref() {
-                if let Some(artist) = song.metadata().artist.as_deref() {
-                    let _ = chan
-                        .edit(&http, |c| c.topic(format!("{} - {}", title, artist)))
-                        .await;
-                } else {
-                    let _ = chan.edit(&http, |c| c.topic(title)).await;
-                }
-            }
         }
 
         Ok(song)
@@ -401,6 +391,7 @@ impl MediaQueue {
         if let Err(err) = msg_err {
             warn!("Failed to send next song message: {:?}", err);
         }
+
         Ok(())
     }
 }

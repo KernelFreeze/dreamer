@@ -20,5 +20,5 @@ async fn pause(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .await;
     queue.pause()?;
 
-    send_info("voice.update", "voice.pause", msg, ctx).await
+    send_info("voice.update", "queue.pause", msg, ctx).await
 }

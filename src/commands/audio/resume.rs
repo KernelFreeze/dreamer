@@ -20,5 +20,5 @@ async fn resume(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .await;
     queue.resume()?;
 
-    send_info("voice.update", "voice.resume", msg, ctx).await
+    send_info("voice.update", "queue.resume", msg, ctx).await
 }
