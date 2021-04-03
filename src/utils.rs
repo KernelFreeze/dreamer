@@ -38,7 +38,9 @@ where
     Ok(())
 }
 
-pub async fn send_translated_info<S>(title: S, description: S, data: Value, msg: &Message, ctx: &Context) -> CommandResult
+pub async fn send_translated_info<S>(
+    title: S, description: S, data: Value, msg: &Message, ctx: &Context,
+) -> CommandResult
 where
     S: AsRef<str>, {
     let lang = get_language(msg.author.id, msg.guild_id).await;

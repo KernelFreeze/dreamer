@@ -14,16 +14,16 @@ async fn back(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild_id = guild.id;
 
     let queues = queue::get_queues().await;
-    let mut queue = queue::get(&queues, guild_id)
-        .ok_or("No queue found for guild")?
-        .write()
-        .await;
-    queue.back().await?;
+    let queue = queue::get(&queues, guild_id).ok_or("No queue found for guild")?;
+
+    queue.write().await.back().await?;
+    let song = queue.read().await.play().await?;
+    queue.write().await.update_song(song).await;
 
     send_translated_info(
         "voice.update",
         "queue.back",
-        json!({"remaining": queue.remaining().len()}),
+        json!({"remaining": queue.read().await.remaining().len()}),
         msg,
         ctx,
     )

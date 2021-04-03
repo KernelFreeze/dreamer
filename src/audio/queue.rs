@@ -53,6 +53,7 @@ pub enum MediaQueueError {
 
 #[derive(Debug, Clone)]
 pub struct MediaQueue {
+    repeat: bool,
     volume: f32,
     curr: usize,
     inner: SmallVec<[MediaResource; 5]>,
@@ -65,6 +66,7 @@ pub struct MediaQueue {
 impl Default for MediaQueue {
     fn default() -> Self {
         Self {
+            repeat: false,
             volume: 1.0,
             curr: 0,
             inner: SmallVec::new(),
@@ -77,6 +79,18 @@ impl Default for MediaQueue {
 }
 
 impl MediaQueue {
+    pub fn toggle_repeat(&mut self) {
+        self.repeat = !self.repeat;
+    }
+
+    pub fn set_repeat(&mut self, repeat: bool) {
+        self.repeat = repeat;
+    }
+
+    pub fn repeat(&self) -> bool {
+        self.repeat
+    }
+
     pub fn current(&self) -> Option<&MediaResource> {
         self.inner.get(self.curr)
     }
@@ -106,10 +120,16 @@ impl MediaQueue {
     pub async fn next(&mut self) -> Result<(), MediaQueueError> {
         debug!("Skipping to next song");
         self.curr += 1;
+
         if self.is_empty() {
-            return Err(MediaQueueError::Empty);
+            if self.repeat() {
+                self.curr = 0;
+            }
+
+            if self.is_empty() {
+                return Err(MediaQueueError::Empty);
+            }
         }
-        self.play().await?;
         Ok(())
     }
 
@@ -221,19 +241,20 @@ impl MediaQueue {
             .lock()
             .await
             .add_global_event(Event::Track(TrackEvent::End), SongEndNotifier { guild_id });
-
-        while self.play().await.is_err() {
-            self.curr += 1;
-            if self.is_empty() {
-                return Err(MediaQueueError::FailedToStart);
-            }
-        }
         Ok(())
     }
 
+    pub async fn update_song(&mut self, song: TrackHandle) {
+        if let Err(err) = self.send_song_message(&song).await {
+            warn!("Failed to send song message {:?}", err);
+        }
+
+        self.curr_handle = Some(song);
+    }
+
     #[instrument]
-    async fn play(&mut self) -> Result<(), MediaQueueError> {
-        debug!("Trying to play next song");
+    pub async fn play(&self) -> Result<TrackHandle, MediaQueueError> {
+        debug!("Trying to play current song");
 
         let url = self
             .current()
@@ -243,13 +264,11 @@ impl MediaQueue {
             .ok_or(MediaQueueError::NoUrl)?;
 
         // Create Discord player
-        self.create_player(url).await?;
-
-        Ok(())
+        self.create_player(url).await
     }
 
     #[instrument]
-    async fn create_player(&mut self, url: String) -> Result<(), MediaQueueError> {
+    async fn create_player(&self, url: String) -> Result<TrackHandle, MediaQueueError> {
         debug!("Creating player");
         let handler_lock = self
             .handler_lock
@@ -265,10 +284,7 @@ impl MediaQueue {
         track.set_volume(self.volume);
         handler.play_only(track);
 
-        self.send_song_message(&song).await?;
-
-        self.curr_handle = Some(song);
-        Ok(())
+        Ok(song)
     }
 
     async fn send_song_message(&self, song: &TrackHandle) -> Result<(), MediaQueueError> {
@@ -320,6 +336,10 @@ pub async fn get_write(queues: &mut QueuesType, id: GuildId) -> RwLockWriteGuard
     queues.entry(id).or_default().write().await
 }
 
+pub fn get_or_create(queues: &mut QueuesType, id: GuildId) -> &RwLock<MediaQueue> {
+    queues.entry(id).or_default()
+}
+
 pub fn get(queues: &QueuesType, id: GuildId) -> Option<&RwLock<MediaQueue>> {
     queues.get(&id)
 }
@@ -336,14 +356,23 @@ impl VoiceEventHandler for SongEndNotifier {
                 if state.playing != PlayMode::End && state.playing != PlayMode::Stop {
                     continue;
                 }
-                debug!("Track {:?} finished with states {:?}", handle, state);
+                debug!(
+                    "Track {:?} finished with states {:?}",
+                    handle.metadata().title,
+                    state
+                );
 
                 let queues = get_queues().await;
                 if let Some(queue) = get(&queues, self.guild_id) {
-                    if queue.write().await.next().await.is_err() {
-                        get_queues_mut().await.remove(&self.guild_id);
-                        return Some(Event::Cancel);
+                    while queue.write().await.next().await.is_ok() {
+                        if let Ok(song) = queue.read().await.play().await {
+                            queue.write().await.update_song(song).await;
+                            return None;
+                        }
                     }
+
+                    get_queues_mut().await.remove(&self.guild_id);
+                    return Some(Event::Cancel);
                 } else {
                     return Some(Event::Cancel);
                 }

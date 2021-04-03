@@ -1,3 +1,4 @@
+use queue::MediaQueueError;
 use serde_json::json;
 use serenity::client::Context;
 use serenity::framework::standard::macros::command;
@@ -15,16 +16,27 @@ async fn next(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild_id = guild.id;
 
     let queues = queue::get_queues().await;
-    let mut queue = queue::get(&queues, guild_id)
-        .ok_or("No queue found for guild")?
-        .write()
-        .await;
-    queue.next().await?;
+    let queue = queue::get(&queues, guild_id).ok_or("There are no active queue for this server")?;
+
+    queue.write().await.next().await?;
+    let mut song = queue.read().await.play().await;
+
+    while song.is_err() {
+        if queue.write().await.next().await.is_err() {
+            return Err(MediaQueueError::FailedToStart.into());
+        }
+
+        song = queue.read().await.play().await;
+    }
+
+    if let Ok(song) = song {
+        queue.write().await.update_song(song).await;
+    }
 
     send_translated_info(
         "voice.update",
         "queue.next",
-        json!({"remaining": queue.remaining().len()}),
+        json!({"remaining": queue.read().await.remaining().len()}),
         msg,
         ctx,
     )

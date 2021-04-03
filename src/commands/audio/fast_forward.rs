@@ -1,4 +1,3 @@
-
 use std::time::Duration;
 
 use hhmmss::Hhmmss;
@@ -13,7 +12,8 @@ use crate::utils::send_translated_info;
 
 #[command]
 #[only_in(guilds)]
-#[description = "Fast forward a portion of an audio.\nUses 5 seconds by default\n**Example:** `ff 30`"]
+#[description = "Fast forward a portion of an audio.\nUses 5 seconds by default\n**Example:** `ff \
+                 30`"]
 #[aliases("ff", "fastforward", "advance")]
 async fn fast_forward(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;

@@ -8,7 +8,7 @@ use crate::audio::queue;
 #[command]
 #[only_in(guilds)]
 #[aliases("loop")]
-#[description = "Repeat the current playing sound"]
+#[description = "Repeat the current queue"]
 async fn repeat(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
     let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;
     let guild_id = guild.id;
@@ -18,6 +18,7 @@ async fn repeat(ctx: &Context, msg: &Message, _args: Args) -> CommandResult {
         .ok_or("No queue found for guild")?
         .write()
         .await;
-    
+    queue.toggle_repeat();
+
     Ok(())
 }

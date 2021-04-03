@@ -30,7 +30,7 @@ async fn volume(ctx: &Context, msg: &Message, mut args: Args) -> CommandResult {
     send_translated_info(
         "voice.update",
         "queue.volume",
-        json!({"volume": volume}),
+        json!({ "volume": volume }),
         msg,
         ctx,
     )

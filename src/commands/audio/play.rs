@@ -1,5 +1,6 @@
 use std::lazy::SyncLazy;
 
+use queue::MediaQueueError;
 use regex::Regex;
 use serenity::client::Context;
 use serenity::framework::standard::macros::command;
@@ -96,12 +97,17 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         audio_list = "\u{279c} (Titles not displayed)".to_string();
     }
 
-    let mut queues = queue::get_queues_mut().await;
-    let mut queue = queue::get_write(&mut queues, guild_id).await;
+    {
+        let mut queues = queue::get_queues_mut().await;
+        queue::get_or_create(&mut queues, guild_id);
+    }
+
+    let queues = queue::get_queues().await;
+    let queue = queue::get(&queues, guild_id).ok_or("Failed to create queue")?;
 
     // Add all audios to the queue
     for audio in audios {
-        queue.add(audio);
+        queue.write().await.add(audio);
     }
 
     let text_channel = msg.channel_id;
@@ -136,8 +142,23 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
         .await?;
 
     queue
+        .write()
+        .await
         .start(call.clone(), text_channel, guild_id, ctx.http.clone())
         .await?;
+
+    let mut song = queue.read().await.play().await;
+    while song.is_err() {
+        if { queue.write().await.next().await }.is_err() {
+            return Err(MediaQueueError::FailedToStart.into());
+        }
+
+        song = queue.read().await.play().await;
+    }
+
+    if let Ok(song) = song {
+        queue.write().await.update_song(song).await;
+    }
 
     Ok(())
 }
