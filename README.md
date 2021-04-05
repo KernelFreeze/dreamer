@@ -7,10 +7,9 @@ By contributing and using this software, you agree to the terms and conditions s
 To invite the bot to your server follow [this link](https://discord.com/api/oauth2/authorize?client_id=811968112991666199&permissions=4294438775&scope=bot).
 
 # Setup
-Install rust nightly, ffmpeg, cmake, youtube-dl and the following python pip dependencies.
+Install rust nightly, ffmpeg, youtube-dl and the following python pip dependencies.
 
 
 ```bash
-python3 -m pip install ytmusicapi
-python3 -m pip install lyrics_extractor
+python3 -m pip install ytmusicapi lyrics_extractor
 ```
