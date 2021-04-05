@@ -1,0 +1,5 @@
+/target
+*.log
+.spotify_token_cache.json
+.git
+docs

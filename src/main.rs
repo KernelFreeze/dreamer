@@ -56,14 +56,17 @@ async fn main() -> Result<(), Box<dyn Error>> {
 
     tracing_subscriber::fmt::init();
 
-    // Fetch discord token
-    let token = env::var("DISCORD_TOKEN")?;
+    let token = env::var("DISCORD_TOKEN")
+        .map_err(|_| "Failed to get DISCORD_TOKEN environment variable")?;
+    let prefix =
+        env::var("BOT_PREFIX").map_err(|_| "Failed to get BOT_PREFIX environment variable")?;
+    let database =
+        env::var("DATABASE_URI").map_err(|_| "Failed to get DATABASE_URI environment variable")?;
 
     // Connect to database
-    database::connect(&env::var("DATABASE_URI")?).await?;
+    database::connect(&database).await?;
 
     let owners = get_owners(&token).await?;
-    let prefix = env::var("BOT_PREFIX")?;
 
     let mut client = Client::builder(&token)
         .event_handler(events::Handler)

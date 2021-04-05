@@ -1,6 +1,6 @@
 use std::lazy::SyncLazy;
 
-use queue::{try_play_all, MediaQueueError};
+use queue::try_play_all;
 use regex::Regex;
 use serenity::client::Context;
 use serenity::framework::standard::macros::command;
