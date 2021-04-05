@@ -7,10 +7,10 @@
 
 use std::collections::HashSet;
 use std::env;
+use std::env::VarError;
 use std::error::Error;
 use std::sync::Arc;
 
-use dotenv::dotenv;
 use mimalloc::MiMalloc;
 use serenity::client::bridge::gateway::{GatewayIntents, ShardManager};
 use serenity::client::Client;
@@ -49,24 +49,20 @@ async fn init_data_manager(client: &Client) {
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn Error>> {
-    // Fetch environment variables from .env file
-    if let Err(err) = dotenv() {
-        println!("Failed to parse environment variables file: {:?}", err);
-    }
-
     tracing_subscriber::fmt::init();
 
-    let token = env::var("DISCORD_TOKEN")
-        .map_err(|_| "Failed to get DISCORD_TOKEN environment variable")?;
-    let prefix =
-        env::var("BOT_PREFIX").map_err(|_| "Failed to get BOT_PREFIX environment variable")?;
-    let database =
-        env::var("DATABASE_URI").map_err(|_| "Failed to get DATABASE_URI environment variable")?;
+    fn env_var_err(err: VarError) -> String {
+        format!("Failed to process environment variable. {:?}", err)
+    }
+
+    let token = env::var("DISCORD_TOKEN").map_err(env_var_err)?;
+    let prefix = env::var("BOT_PREFIX").map_err(env_var_err)?;
+    let database = env::var("DATABASE_URI").map_err(env_var_err)?;
+
+    let owners = get_owners(&token).await?;
 
     // Connect to database
     database::connect(&database).await?;
-
-    let owners = get_owners(&token).await?;
 
     let mut client = Client::builder(&token)
         .event_handler(events::Handler)
@@ -91,14 +87,14 @@ async fn main() -> Result<(), Box<dyn Error>> {
         .register_songbird()
         .intents(GatewayIntents::non_privileged())
         .await?;
-    init_data_manager(&client).await;
 
+    init_data_manager(&client).await;
     client.start_autosharded().await?;
     Ok(())
 }
 
 /// Fetch bot owners from Discord application
-async fn get_owners(token: &String) -> Result<HashSet<UserId>, Box<dyn Error>> {
+async fn get_owners(token: &str) -> Result<HashSet<UserId>, serenity::Error> {
     let http = Http::new_with_token(token);
     let info = http.get_current_application_info().await?;
 

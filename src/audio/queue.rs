@@ -92,10 +92,6 @@ impl MediaQueue {
         self.repeat = !self.repeat;
     }
 
-    pub fn set_repeat(&mut self, repeat: bool) {
-        self.repeat = repeat;
-    }
-
     pub fn repeat(&self) -> bool {
         self.repeat
     }
@@ -429,7 +425,7 @@ pub async fn try_play_all(guild_id: GuildId, next: bool) -> Result<(), MediaQueu
         error!("Failed to play song {:?}", err);
 
         if queue.write().await.next().await.is_err() {
-            return Err(MediaQueueError::QueueEnd.into());
+            return Err(MediaQueueError::QueueEnd);
         }
 
         song = queue.read().await.play().await;

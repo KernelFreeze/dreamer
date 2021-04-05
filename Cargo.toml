@@ -11,7 +11,6 @@ members = [
 ]
 
 [dependencies]
-dotenv = "0.15"
 serde = "1.0"
 futures = "0.3"
 tracing = "0.1"

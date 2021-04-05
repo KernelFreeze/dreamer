@@ -48,7 +48,13 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
     queue
         .write()
         .await
-        .start(call.clone(), msg.channel_id, guild.id, ctx.http.clone(), voice_channel)
+        .start(
+            call.clone(),
+            msg.channel_id,
+            guild.id,
+            ctx.http.clone(),
+            voice_channel,
+        )
         .await?;
 
     send_info("voice.update", "voice.joined", msg, ctx).await
