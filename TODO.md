@@ -1,6 +1,6 @@
-- Prevent rejoin
+- Guild settings
+    - Vote based skip
+    - Language
+- User settings
 - Effects
-- Fast Forward/Rewind
 - Radios (Lofi, Kernel...)
-- Configurable play permissions (only when connected to channel?)
-- Translation settings

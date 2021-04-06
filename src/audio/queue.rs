@@ -456,10 +456,12 @@ impl VoiceEventHandler for SongEndNotifier {
                 );
 
                 if let Err(err) = try_play_all(self.guild_id, true).await {
-                    let queues = get_queues().await;
-                    if let Some(queue) = get(&queues, self.guild_id) {
-                        if let Err(err) = queue.read().await.send_queue_error(err).await {
-                            warn!("Failed to display queue error: {:?}", err);
+                    {
+                        let queues = get_queues().await;
+                        if let Some(queue) = get(&queues, self.guild_id) {
+                            if let Err(err) = queue.read().await.send_queue_error(err).await {
+                                warn!("Failed to display queue error: {:?}", err);
+                            }
                         }
                     }
 
