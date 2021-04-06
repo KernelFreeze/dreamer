@@ -20,7 +20,10 @@ async fn leave(ctx: &Context, msg: &Message) -> CommandResult {
         .ok_or("Voice client was not initialized")?
         .clone();
 
-    queue::get_queues_mut().await.remove(&guild_id);
+    let queues = queue::get_queues().await;
+    if let Some(queue) = queue::get(&queues, guild_id) {
+        queue.write().await.clear()?;
+    }
 
     manager.get(guild_id).ok_or("Not in a voice channel")?;
     manager.remove(guild_id).await?;
