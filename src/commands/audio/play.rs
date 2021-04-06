@@ -1,3 +1,4 @@
+use std::error::Error;
 use std::lazy::SyncLazy;
 
 use queue::try_play_all;
@@ -12,7 +13,7 @@ use crate::audio::source::{ytdl_metadata, MediaResource};
 use crate::audio::{queue, spotify};
 use crate::constants::MUSIC_ICON;
 
-async fn get_videos<S>(query: S) -> Vec<MediaResource>
+async fn get_videos<S>(query: S) -> Result<Vec<MediaResource>, Box<dyn Error>>
 where
     S: AsRef<str>, {
     static RE: SyncLazy<Regex> = SyncLazy::new(|| {
@@ -22,20 +23,21 @@ where
 
     // Check if is a Spotify uri
     if spotify::is_spotify_url(query.as_ref()) {
-        return spotify::get_titles(query)
-            .await
-            .unwrap_or_else(|_| Vec::new())
+        return Ok(spotify::get_titles(query)
+            .await?
             .iter()
             .map(MediaResource::with_query)
-            .collect();
+            .collect());
     }
 
     // Check if is a normal uri
     if RE.is_match(query.as_ref()) {
-        return ytdl_metadata(query).await.unwrap_or_else(|_| Vec::new());
+        return Ok(ytdl_metadata(query)
+            .await
+            .map_err(|err| format!("`youtube-dl` error {:?}", err))?);
     }
 
-    vec![MediaResource::with_query(query)]
+    Ok(vec![MediaResource::with_query(query)])
 }
 
 #[command]
@@ -48,7 +50,9 @@ async fn play(ctx: &Context, msg: &Message, args: Args) -> CommandResult {
     let query = args
         .remains()
         .ok_or("Must provide a URL to a video or audio, or a search query.")?;
-    let audios = get_videos(&query).await;
+    let audios = get_videos(&query)
+        .await
+        .map_err(|err| format!("Failed to query: {:?}", err))?;
     let audio_len = audios.len();
 
     let guild = msg.guild(&ctx.cache).await.ok_or("Failed to fetch guild")?;

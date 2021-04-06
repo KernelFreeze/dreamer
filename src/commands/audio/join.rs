@@ -31,12 +31,12 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 
     let (call, result) = manager.join(guild.id, voice_channel).await;
     result?;
-
-    let mut handler = call.lock().await;
-    if !handler.is_deaf() {
-        handler.deafen(true).await?;
+    {
+        let mut handler = call.lock().await;
+        if !handler.is_deaf() {
+            handler.deafen(true).await?;
+        }
     }
-
     {
         let mut queues = queue::get_queues_mut().await;
         queue::get_or_create(&mut queues, guild.id);
@@ -44,6 +44,8 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
 
     let queues = queue::get_queues().await;
     let queue = queue::get(&queues, guild.id).ok_or("Failed to create queue")?;
+
+    send_info("voice.update", "voice.joined", msg, ctx).await?;
 
     queue
         .write()
@@ -57,5 +59,5 @@ async fn join(ctx: &Context, msg: &Message) -> CommandResult {
         )
         .await?;
 
-    send_info("voice.update", "voice.joined", msg, ctx).await
+    Ok(())
 }
