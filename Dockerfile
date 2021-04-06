@@ -1,16 +1,11 @@
-FROM docker.io/rustlang/rust:nightly-alpine3.12 as rust-builder
+FROM docker.io/rustlang/rust:nightly as rust-builder
 WORKDIR /usr/src/dreamer
 COPY . .
-ENV LIBOPUS_STATIC="true"
-RUN apk add --no-cache opus-dev musl-dev pkgconfig
+RUN apt update && apt install -y libopus-dev pkg-config
 RUN cargo install --path .
 
-FROM python:alpine AS python-builder
-RUN apk add --update --no-cache python3-dev libxml2-dev libxslt-dev build-base
+FROM python:3
 RUN pip3 install --user ytmusicapi lyrics_extractor
-
-FROM python:alpine
-RUN apk add --no-cache ffmpeg youtube-dl libxml2 libxslt
-COPY --from=python-builder /root/.local /root/.local
+RUN apt update && apt install -y ffmpeg youtube-dl
 COPY --from=rust-builder /usr/local/cargo/bin/dreamer /usr/local/bin/dreamer
 CMD ["dreamer"]
