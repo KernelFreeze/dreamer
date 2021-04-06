@@ -1,4 +1,5 @@
 #![feature(once_cell)]
+#![feature(async_closure)]
 #![feature(box_syntax)]
 #![feature(result_flattening)]
 #![deny(clippy::unwrap_in_result)]

@@ -128,14 +128,13 @@ impl MediaQueue {
 
     pub async fn next(&mut self) -> Result<(), MediaQueueError> {
         debug!("Skipping to next song");
-        self.curr += 1;
 
-        if self.is_empty() {
+        if self.curr < self.inner.len().max(1) - 1 {
+            self.curr += 1;
+        } else {
             if self.repeat() {
                 self.curr = 0;
-            }
-
-            if self.is_empty() {
+            } else {
                 return Err(MediaQueueError::Empty);
             }
         }
@@ -168,7 +167,7 @@ impl MediaQueue {
     }
 
     pub fn clear(&mut self) -> Result<(), MediaQueueError> {
-        self.stop()?;
+        let _ = self.stop();
         self.curr = 0;
         self.inner = SmallVec::new();
         Ok(())
@@ -183,18 +182,12 @@ impl MediaQueue {
     }
 
     pub fn remaining(&self) -> &[MediaResource] {
-        let next = self.curr + 1;
-        &self.inner[next.min(self.inner.len())..]
+        &self.inner[(self.curr + 1).min(self.inner.len())..]
     }
 
     pub fn remaining_mut(&mut self) -> &mut [MediaResource] {
         let len = self.inner.len();
-        let next = self.curr + 1;
-        &mut self.inner[next.min(len)..]
-    }
-
-    pub fn is_empty(&self) -> bool {
-        self.remaining().len() == 0
+        &mut self.inner[(self.curr + 1).min(len)..]
     }
 
     pub fn is_playing(&self) -> bool {

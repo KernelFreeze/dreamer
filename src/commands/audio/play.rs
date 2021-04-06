@@ -1,6 +1,7 @@
 use std::error::Error;
 use std::lazy::SyncLazy;
 
+use futures::stream::{self, StreamExt};
 use queue::try_play_all;
 use regex::Regex;
 use serenity::client::Context;
@@ -23,11 +24,13 @@ where
 
     // Check if is a Spotify uri
     if spotify::is_spotify_url(query.as_ref()) {
-        return Ok(spotify::get_titles(query)
-            .await?
-            .iter()
+        let titles = spotify::get_titles(query).await?;
+        let tracks = stream::iter(titles)
             .map(MediaResource::with_query)
-            .collect());
+            .filter_map(async move |v| v.await.ok())
+            .collect::<Vec<MediaResource>>()
+            .await;
+        return Ok(tracks);
     }
 
     // Check if is a normal uri
@@ -37,7 +40,8 @@ where
             .map_err(|err| format!("`youtube-dl` error {:?}", err))?);
     }
 
-    Ok(vec![MediaResource::with_query(query)])
+    let query = MediaResource::with_query(query).await?;
+    Ok(vec![query])
 }
 
 #[command]

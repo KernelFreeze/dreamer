@@ -1,10 +1,11 @@
+use std::error::Error;
 use std::io::{BufRead, BufReader, Read};
 use std::process::{Command, Stdio};
 use std::time::Duration;
 
 use serde::{Deserialize, Serialize};
 use serenity::async_trait;
-use songbird::input::error::{Error, Result};
+use songbird::input::error::{Error as SongbirdError, Result as SongbirdResult};
 use songbird::input::restartable::Restart;
 use songbird::input::{Codec, Container, Input, Metadata, Reader, Restartable};
 use tokio::process::Command as TokioCommand;
@@ -22,42 +23,33 @@ pub struct MediaResource {
     pub duration: Option<f64>,
     pub view_count: Option<u64>,
     pub uploader: Option<String>,
-    pub search_query: Option<String>,
 }
 
 impl MediaResource {
-    pub fn with_query<S: AsRef<str>>(query: S) -> Self {
-        MediaResource {
-            search_query: Some(String::from(query.as_ref())),
-            ..MediaResource::default()
-        }
+    pub async fn with_query<S: AsRef<str>>(query: S) -> Result<Self, Box<dyn Error>> {
+        let results = youtube_music::search(query).await?;
+        let result = results.get(0).ok_or("No results found for your query.")?;
+        let meta = ytdl_metadata(&result.video_id)
+            .await
+            .map_err(|err| format!("`youtube-dl` error {:?}", err))?;
+        let meta = meta.get(0).ok_or("No results found for your query.")?.clone();
+
+        Ok(meta)
     }
 
     pub fn title(&self) -> Option<String> {
         if let Some(title) = &self.title {
             return Some(title.clone());
         }
-        if let Some(search) = &self.search_query {
-            return Some(search.clone());
-        }
         self.url.clone()
     }
 
     pub async fn url(&self) -> Option<String> {
-        if let Some(url) = &self.url {
-            return Some(url.clone());
-        }
-
-        if let Some(search) = &self.search_query {
-            let results = youtube_music::search(search).await.ok()?;
-            let result = results.get(0)?;
-            return Some(result.video_id.clone());
-        }
-        None
+        self.url.clone()
     }
 }
 
-pub async fn ytdl_metadata<S>(uri: S) -> Result<Vec<MediaResource>>
+pub async fn ytdl_metadata<S>(uri: S) -> SongbirdResult<Vec<MediaResource>>
 where
     S: AsRef<str>, {
     // Most of these flags are likely unused, but we want identical search
@@ -96,11 +88,11 @@ where
 
 pub async fn download<P: AsRef<str> + Send + Clone + Sync + 'static>(
     uri: P, lazy: bool,
-) -> Result<Restartable> {
+) -> SongbirdResult<Restartable> {
     Restartable::new(YtdlRestarter { uri }, lazy).await
 }
 
-async fn ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
+async fn ytdl(uri: &str, pre_args: &[&str]) -> SongbirdResult<Input> {
     let ytdl_args = [
         "--print-json",
         "-f",
@@ -137,26 +129,26 @@ async fn ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
         .spawn()?;
 
     // This rigmarole is required due to the inner synchronous reading context.
-    let mut stderr = youtube_dl.stderr.take().ok_or(Error::Stdout)?;
+    let mut stderr = youtube_dl.stderr.take().ok_or(SongbirdError::Stdout)?;
     let metadata = task::spawn_blocking(move || {
         let mut buffer = String::new();
         let mut serde_read = BufReader::new(stderr.by_ref());
 
         serde_read
             .read_line(&mut buffer)
-            .map_err(|_| Error::Metadata)?;
+            .map_err(|_| SongbirdError::Metadata)?;
 
-        serde_json::from_str(&buffer).map_err(|_| Error::Metadata)
+        serde_json::from_str(&buffer).map_err(|_| SongbirdError::Metadata)
     })
     .await
-    .map_err(|_| Error::Metadata)?;
+    .map_err(|_| SongbirdError::Metadata)?;
 
     let ffmpeg = Command::new("ffmpeg")
         .args(pre_args)
         .arg("-i")
         .arg("-")
         .args(&ffmpeg_args)
-        .stdin(youtube_dl.stdout.take().ok_or(Error::Stdout)?)
+        .stdin(youtube_dl.stdout.take().ok_or(SongbirdError::Stdout)?)
         .stderr(Stdio::null())
         .stdout(Stdio::piped())
         .spawn()?;
@@ -173,7 +165,7 @@ async fn ytdl(uri: &str, pre_args: &[&str]) -> Result<Input> {
     ))
 }
 
-async fn _ytdl_metadata(uri: &str) -> Result<Metadata> {
+async fn _ytdl_metadata(uri: &str) -> SongbirdResult<Metadata> {
     // Most of these flags are likely unused, but we want identical search
     // and/or selection as the above functions.
     let ytdl_args = [
@@ -203,7 +195,7 @@ async fn _ytdl_metadata(uri: &str) -> Result<Metadata> {
         .position(|el| *el == b'\n')
         .unwrap_or_else(|| o_vec.len());
 
-    let value = serde_json::from_slice(&o_vec[..end]).map_err(|err| Error::Json {
+    let value = serde_json::from_slice(&o_vec[..end]).map_err(|err| SongbirdError::Json {
         error: err,
         parsed_text: std::str::from_utf8(&o_vec).unwrap_or_default().to_string(),
     })?;
@@ -224,7 +216,7 @@ impl<P> Restart for YtdlRestarter<P>
 where
     P: AsRef<str> + Send + Sync,
 {
-    async fn call_restart(&mut self, time: Option<Duration>) -> Result<Input> {
+    async fn call_restart(&mut self, time: Option<Duration>) -> SongbirdResult<Input> {
         if let Some(time) = time {
             let ts = format!("{}.{}", time.as_secs(), time.subsec_millis());
 
@@ -234,7 +226,7 @@ where
         }
     }
 
-    async fn lazy_init(&mut self) -> Result<(Option<Metadata>, Codec, Container)> {
+    async fn lazy_init(&mut self) -> SongbirdResult<(Option<Metadata>, Codec, Container)> {
         _ytdl_metadata(self.uri.as_ref())
             .await
             .map(|m| (Some(m), Codec::FloatPcm, Container::Raw))
