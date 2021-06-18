@@ -29,7 +29,7 @@ hhmmss = "0.1"
 rand = "0.8"
 async-recursion = "0.3"
 mimalloc = { version = "0.1", default-features = false }
-simd-json = "0.3"
+simd-json = "0.4"
 
 [dependencies.wither]
 git = "https://github.com/KernelFreeze/wither.git"
