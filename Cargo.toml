@@ -51,5 +51,5 @@ branch = "current"
 features = ["voice", "absolute_ratelimits", "collector"]
 
 [dependencies.tokio]
-version = "1.9"
+version = "1.11"
 features = ["macros", "rt-multi-thread"]
